@@ -1,0 +1,15 @@
+name = "photo-grid"
+compatibility_date = "2025-06-16"
+compatibility_flags = ["nodejs_compat"]
+
+[[r2_buckets]]
+binding = "PHOTOS_BUCKET"
+bucket_name = "photos"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "photo_meta"
+
+[vars]
+GRID_W = "240"
+GRID_H = "320" 

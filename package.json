@@ -1,0 +1,25 @@
+{
+  "name": "spectra-grid",
+  "private": true,
+  "scripts": {
+    "dev": "bunx next dev",
+    "build": "bunx next build",
+    "deploy": "wrangler pages deploy ./.next",
+    "import": "bun run scripts/import.ts"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4",
+    "@headlessui/react": "2.2.4",
+    "colorthief": "^2.6.0",
+    "exifreader": "^4.31.0",
+    "lucide-react": "^0.390.0",
+    "next": "14.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.21.0",
+    "typescript": "5.5.4"
+  }
+}

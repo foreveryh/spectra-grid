@@ -1,0 +1,78 @@
+'use client';
+
+import { photos as mockPhotos } from '../../../lib/mockData';
+import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
+
+const mockTags = [
+  ['摄影', '黑白'],
+  ['人体艺术', '摄影'],
+  ['黑白', '人体艺术'],
+  ['摄影'],
+  ['黑白'],
+  ['人体艺术'],
+];
+const mockDesc = [
+  '一幅极具张力的黑白摄影作品，展现了光影与人体的完美结合。',
+  '人体艺术与摄影的碰撞，捕捉瞬间的美感与力量。',
+  '黑白色调下的人体线条，极致的艺术表现。',
+  '摄影师用镜头记录下独特的瞬间，展现出人与环境的和谐。',
+  '极简黑白，纯粹的视觉冲击力。',
+  '人体与光影的交融，艺术与现实的对话。',
+];
+
+export default function PhotoDetail({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const photo = mockPhotos.find((p: any) => String(p.id) === params.id);
+  if (!photo) return <div className="p-8 text-xl">图片不存在</div>;
+  // mock 标签和描述
+  const tagIdx = Number(params.id) % mockTags.length;
+  const descIdx = Number(params.id) % mockDesc.length;
+  const tags = mockTags[tagIdx];
+  const desc = mockDesc[descIdx];
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-[#faf9f6] px-4 lg:px-8">
+      <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 max-w-screen-lg w-full">
+        {/* 图片 */}
+        <img
+          src={`${photo.r2_key}?width=800&format=webp`}
+          alt={photo.filename}
+          className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-[600px] rounded-xl shadow-2xl bg-white object-contain"
+        />
+        {/* 信息区域 */}
+        <div className="flex flex-col justify-center w-full lg:min-w-[320px] text-center lg:text-left">
+          <div className="flex flex-wrap justify-center lg:justify-start gap-2 mb-4">
+            {tags.map(tag => (
+              <span key={tag} className="px-2 py-1 bg-gray-200 rounded text-xs text-gray-700">{tag}</span>
+            ))}
+          </div>
+          <p className="mb-6 text-gray-700 leading-relaxed px-2 lg:px-0">{desc}</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <button
+              className="inline-flex items-center justify-center px-6 py-2 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors min-w-[140px]"
+              onClick={() => router.back()}
+            >
+              Back to Grid
+            </button>
+            <a
+              href={`${photo.r2_key}?width=1600&format=webp`}
+              download={photo.filename}
+              className="inline-flex items-center justify-center px-6 py-2 rounded-full border border-black text-black text-sm font-medium hover:bg-black hover:text-white transition-colors min-w-[140px]"
+            >
+              Download Image
+            </a>
+          </div>
+        </div>
+      </div>
+      {/* 右上角关闭按钮 */}
+      <button
+        onClick={() => router.back()}
+        className="fixed top-4 right-4 text-gray-600 hover:text-black transition-colors"
+        aria-label="关闭"
+      >
+        <X size={28} />
+      </button>
+    </div>
+  );
+} 

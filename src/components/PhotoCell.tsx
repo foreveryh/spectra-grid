@@ -4,14 +4,15 @@ interface Props {
   photo: any;
   isMoving: boolean;
   size: number; // 240
+  onClick?: () => void;
 }
 
-export const PhotoCell: FC<Props> = ({ photo, isMoving, size }) => {
+export const PhotoCell: FC<Props> = ({ photo, isMoving, size, onClick }) => {
   const thumb = `${photo.r2_key}?width=${size}&height=${size}&fit=cover&gravity=auto&format=webp`;
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden"
+      className="absolute inset-0 overflow-hidden cursor-pointer"
       style={{ 
         background: photo.dominant_rgb,
         width: size,
@@ -19,6 +20,7 @@ export const PhotoCell: FC<Props> = ({ photo, isMoving, size }) => {
         padding: 0,
         margin: 0
       }}
+      onClick={onClick}
     >
       <img
         src={thumb}

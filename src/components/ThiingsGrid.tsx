@@ -114,6 +114,7 @@ export type ThiingsGridProps = {
   renderItem: (itemConfig: ItemConfig) => React.ReactNode;
   className?: string;
   initialPosition?: Position;
+  onItemClick?: (gridIndex: number) => void;
 };
 
 class ThiingsGrid extends Component<ThiingsGridProps, State> {
@@ -381,7 +382,28 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
 
     this.lastPos = { x: p.x, y: p.y };
   };
-  private handleUp = () => {
+  private handleUp = (p?: Position) => {
+    if (p && this.props.onItemClick) {
+      // 计算移动距离
+      const dx = p.x - this.lastPos.x;
+      const dy = p.y - this.lastPos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // 如果移动距离小于5像素，认为是点击
+      if (distance < 5) {
+        // 计算点击位置对应的网格索引
+        const containerRect = this.containerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          const x = p.x - containerRect.left - this.state.offset.x;
+          const y = p.y - containerRect.top - this.state.offset.y;
+          const gridX = Math.round(x / this.props.gridSize);
+          const gridY = Math.round(y / this.props.gridSize);
+          const gridIndex = this.getItemIndexForPosition(gridX, gridY);
+          this.props.onItemClick(gridIndex);
+        }
+      }
+    }
+    
     this.setState({ isDragging: false });
     this.animationFrame = requestAnimationFrame(this.animate);
   };
@@ -401,8 +423,8 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
     });
   };
 
-  private handleMouseUp = () => {
-    this.handleUp();
+  private handleMouseUp = (e: React.MouseEvent) => {
+    this.handleUp({ x: e.clientX, y: e.clientY });
   };
 
   private handleTouchStart = (e: React.TouchEvent) => {
@@ -428,8 +450,13 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
     });
   };
 
-  private handleTouchEnd = () => {
-    this.handleUp();
+  private handleTouchEnd = (e: React.TouchEvent) => {
+    const touch = e.changedTouches[0];
+    if (touch) {
+      this.handleUp({ x: touch.clientX, y: touch.clientY });
+    } else {
+      this.handleUp();
+    }
   };
 
   private handleWheel = (e: WheelEvent) => {

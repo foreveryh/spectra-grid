@@ -4,11 +4,13 @@ import ThiingsGrid from "../components/ThiingsGrid";
 import { PhotoCell } from "../components/PhotoCell";
 import { useState } from "react";
 import { photos as mockPhotos } from "../lib/mockData";
+import { useRouter } from "next/navigation";
 
 const GRID = 240; // 150 on mobile
 
 export default function Page() {
   const photos = mockPhotos;
+  const router = useRouter();
 
   return (
     <div className="w-full h-screen overflow-hidden">
@@ -22,8 +24,13 @@ export default function Page() {
               photo={photo}
               isMoving={isMoving}
               size={GRID}
+              onClick={() => router.push(`/photo/${photo.id}`)}
             />
           );
+        }}
+        onItemClick={(gridIndex) => {
+          const photo = photos[gridIndex % photos.length];
+          router.push(`/photo/${photo.id}`);
         }}
       />
     </div>

@@ -38,15 +38,15 @@ wrangler d1 execute DB --file db/schema.sql --remote
 ```
 `CREATE TABLE IF NOT EXISTS` makes the command safe to re-run, so it's fine if your CI/CD repeats execution.
 
-> 💡 **TIP** 远程 D1 does not allow explicit `BEGIN TRANSACTION`, so if you write custom scripts to batch insert, ensure you remove `BEGIN/COMMIT` in `--remote` mode (already handled by `scripts/sync-d1.ts`).
+> 💡 **TIP** Remote D1 does **not** allow explicit `BEGIN TRANSACTION`. If you write custom batch-insert scripts, remove any `BEGIN/COMMIT` statements when using the `--remote` flag (this is already handled by `scripts/sync-d1.ts`).
 
 ---
 ## 4 · Daily Workflow (incremental images)
-1.  `bun run scripts/import.ts ./photos_raw`   # generate meta + thumbs  
+1.  `bun run scripts/import.ts ./photos_raw`   # generate metadata + thumbnails  
 2.  `bun run scripts/upload-r2.ts`              # sync originals & thumbs to R2  
-3.  `bun run scripts/sync-d1.ts`                # 把 photos.json 增量写入本地 D1  
-    `bun run scripts/sync-d1.ts --remote`       # 同步到生产 D1  
-4.  `bun run build && wrangler pages deploy ./.next`
+3.  `bun run scripts/sync-d1.ts`                # incrementally write `photos.json` into local D1  
+    `bun run scripts/sync-d1.ts --remote`       # do the same for production D1  
+4.  `bun run build && bun run export && wrangler pages deploy .vercel/output/static`
 
 ---
 ## 5 · SQL snippets (for scripts)
@@ -69,5 +69,5 @@ UPDATE photos SET purged = 1 WHERE id = ?;
 
 ---
 ## 6 · Next steps
-* `scripts/sync-d1.ts` 已实现增量写入（`INSERT OR IGNORE`）。本地带事务，远程自动去掉事务语句。
-* 可加 cron Worker/GitHub Action：定期物理删除 `is_deleted = 1 AND purged = 0` 且 R2 对象已删除的行。 
+* `scripts/sync-d1.ts` already performs incremental writes via `INSERT OR IGNORE`. Transactions are kept for local D1 but automatically stripped when running with `--remote`.
+* You can add a Cron Worker or GitHub Action that periodically deletes rows where `is_deleted = 1 AND purged = 0` **after** the R2 objects have been physically removed. 

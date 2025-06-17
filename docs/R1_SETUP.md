@@ -31,7 +31,7 @@ wrangler r2 bucket list                 # list all buckets
 wrangler r2 object put  <bucket>/<key> --file ./local/file.ext  --content-type image/avif
 ```
 
-> ℹ️ Wrangler v4 尚未提供 `r2 object head/list`，脚本已通过"直接上传¬→捕获 412"规避，无需额外操作。
+> ℹ️ Wrangler v4 currently does **not** provide `r2 object head/list`. The upload script works around this limitation by **attempting an upload and catching the resulting 412** if the object already exists, so no extra step is required.
 
 ---
 
@@ -98,9 +98,6 @@ NEXT_PUBLIC_R2_BASE=https://<ACCOUNT_ID>.r2.dev/
 ### 2.6 README additions
 - Mention `sharp` dependency.
 - Update "Local dev" section to reflect the `import` -> `upload` workflow.
-
-# (已完成) 进一步改进
-* `scripts/purge-deleted.ts` 可配合 GitHub Action 进行夜间清理。
 
 ---
 ## 3 · TODO (add to project `TODO.md`)

@@ -65,16 +65,16 @@ Production runtime fetches data via `/api/photos` (Edge Function, reads D1) whil
 ## Deploying to Cloudflare Pages (next-on-pages scheme)
 
 ```bash
-# 0) 先准备好 R2/D1 数据（同上）
+# 0) Prepare R2/D1 data first (same as previous section)
 
-# 1) 构建 Next.js 产物
+# 1) Build the Next.js project
 bun run build
 
-# 2) 用 next-on-pages 导出 Cloudflare Pages 兼容产物
+# 2) Export Cloudflare Pages compatible output with next-on-pages
 bun run export
 
-# 3) 部署到 Cloudflare Pages
-wrangler pages deploy .vercel/output/static
+# 3) Deploy to Cloudflare Pages
+wrangler pages deploy .vercel/output/static --project-name YOUR_PROJECT_NAME
 ```
 
 This new workflow, based on next-on-pages, produces much smaller output and eliminates the 25 MiB single file limit. It is the recommended way to deploy to Cloudflare Pages.
@@ -95,7 +95,7 @@ This new workflow, based on next-on-pages, produces much smaller output and elim
 ---
 
 ## Roadmap
-See [`TODO.md`](./TODO.md) and the original [MVP PRD](./mvp_photo_grid_prd_and_skeleton.md) for full backlog & milestones.
+See [`TODO`](./docs/TODO.md) and the original [MVP PRD](./docs/mvp_photo_grid_prd_and_skeleton.md) for the full backlog and milestones.
 
 ## Dependencies
 
@@ -105,4 +105,13 @@ See [`TODO.md`](./TODO.md) and the original [MVP PRD](./mvp_photo_grid_prd_and_s
   Official Cloudflare CLI for deploying to Pages, managing R2/D1 resources, and local Edge Functions debugging.
 - **@cloudflare/workers-types**:
   TypeScript type definitions for Cloudflare Workers, ensuring type-safe development.
-- Other dependencies such as next, react, sharp, colorthief, exifreader, etc. are required for the core features of the project. 
+- Other dependencies such as next, react, sharp, colorthief, exifreader, etc. are required for the core features of the project.
+
+## Documentation
+
+- [Cloudfare D1 Setup](./docs/D1_SETUP.md)
+- [Cloodfare R1 Setup](./docs/R1_SETUP.md)
+- [MVP Product Requirement & Skeleton](./docs/mvp_photo_grid_prd_and_skeleton.md)
+- [Reflection (EN)](./docs/reflection_en.md)
+- [Reflection (ZH)](./docs/reflection_zh.md)
+- [TODO](./docs/TODO.md) 

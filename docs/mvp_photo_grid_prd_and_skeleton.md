@@ -1,14 +1,16 @@
-# MVP Photo Grid – PRD & Code Skeleton
+# MVP Photo Grid – PRD & Code Skeleton
+
+> **Note:** This document captures the *initial* MVP PRD. Any changes to scope or requirements after the first release will be appended in the **UPDATE** section at the bottom. Rationale for each change will be discussed in the project Reflection documents.
 
 ---
 
-## 1 · Product Requirements Document (PRD)
+## 1 · Product Requirements Document (PRD)
 
-### 1.1 Goal
+### 1.1 Goal
 
 Build an **MVP photography showcase** that displays \~1 000 model photos in an infinite, draggable grid (Thiings‑style), sorted by hue to create an artistic gradient. Photos are uploaded by you via CLI; the site runs completely on the Cloudflare stack and uses Bun for dev/CI.
 
-### 1.2 Key Features
+### 1.2 Key Features
 
 | ID  | Feature                                                                              | Must / Nice              |
 | --- | ------------------------------------------------------------------------------------ | ------------------------ |
@@ -21,15 +23,15 @@ Build an **MVP photography showcase** that displays \~1 000 model photos in an
 | F‑7 | Admin soft‑delete & restore                                                          | Nice (CLI now, UI later) |
 | F‑8 | No login / payment (future)                                                          | —                        |
 
-### 1.3 Acceptance Criteria
+### 1.3 Acceptance Criteria
 
-- First paint < 1 s @ Cable 10 Mbps (Edge cache warm)
-- Scroll 60 fps on M1 MacBook & iPhone 13
-- Import 1 000 files locally with `bun run import ./photos_raw` in < 30 s
+- First paint < 1 s @ Cable 10 Mbps (Edge cache warm)
+- Scroll 60 fps on M1 MacBook & iPhone 13
+- Import 1 000 files locally with `bun run import ./photos_raw` in < 30 s
 - Running `bun run dev` starts local edge‑compatible dev server
 - Running `bun run deploy` → Cloudflare Pages + Functions in CI passes
 
-### 1.4 Milestones
+### 1.4 Milestones
 
 1. **Stage 1‑2** – Code skeleton, Bun dev, Wrangler config.
 2. **Stage 3** – CLI importer finished, end‑to‑end upload works.
@@ -38,25 +40,25 @@ Build an **MVP photography showcase** that displays \~1 000 model photos in an
 
 ---
 
-## 2 · Tech & Infra Overview
+## 2 · Tech & Infra Overview
 
 ```
-┌────────────┐   PUT /api/upload (Edge Fn)
+┌────────────┐   PUT /api/upload (Edge Fn)
 │   Bun CLI  │──────────────┐
 └────┬───────┘              │  CF‑D1   CF‑R2
      │                      ▼
      │              ┌──────────────┐
-GET /        ←──────┤  Next.js @Edge│
+GET /        ←──────┤  Next.js @Edge│
 GET /photo/:id      └───┬───────────┘
                         │
                 ┌───────▼───────┐
-                │ Cloudflare R2 │ (original)
+                │ Cloudflare R2 │ (original)
                 └───────────────┘
 ```
 
 ---
 
-## 3 · Project Layout
+## 3 · Project Layout
 
 ```
 .
@@ -82,9 +84,9 @@ GET /photo/:id      └───┬───────────┘
 
 ---
 
-## 4 · Code – *every file ready to copy*
+## 4 · Code – *every file ready to copy*
 
-### 4.1 bunfig.toml
+### 4.1 bunfig.toml
 
 ```toml
 name = "photo-grid"
@@ -92,7 +94,7 @@ version = "0.1.0"
 # Enable .env support & TypeScript transpile
 ```
 
-### 4.2 package.json
+### 4.2 package.json
 
 ```json
 {
@@ -122,7 +124,7 @@ version = "0.1.0"
 }
 ```
 
-### 4.3 wrangler.toml
+### 4.3 wrangler.toml
 
 ```toml
 name = "photo-grid"
@@ -142,7 +144,7 @@ GRID_W = "240"
 GRID_H = "320"
 ```
 
-### 4.4 scripts/import.ts
+### 4.4 scripts/import.ts
 
 ```ts
 /** CLI: bun run scripts/import.ts ./photos_raw */
@@ -198,7 +200,7 @@ function rgb2hsl(r: number, g: number, b: number) {
 }
 ```
 
-### 4.5 src/lib/db.ts
+### 4.5 src/lib/db.ts
 
 ```ts
 import { drizzle } from "drizzle-orm/d1";
@@ -208,10 +210,10 @@ export function getDb(env: Env) {
 }
 ```
 
-### 4.6 src/components/ThiingsGrid.tsx
+### 4.6 src/components/ThiingsGrid.tsx
 
 ```tsx
-// shortened: paste the original open‑source component here (≈260 lines)
+// shortened: paste the original open‑source component here (≈260 lines)
 export interface GridProps {
   gridWidth: number;
   gridHeight: number;
@@ -220,7 +222,7 @@ export interface GridProps {
 // ... implementation identical, but uses gridWidth & gridHeight for layout
 ```
 
-### 4.7 src/components/PhotoCell.tsx
+### 4.7 src/components/PhotoCell.tsx
 
 ```tsx
 import { FC } from "react";
@@ -250,7 +252,7 @@ export const PhotoCell: FC<Props> = ({ photo, isMoving, onOpen, gridW, gridH }) 
 );
 ```
 
-### 4.8 src/components/Lightbox.tsx
+### 4.8 src/components/Lightbox.tsx
 
 ```tsx
 import { Dialog } from "@headlessui/react";
@@ -273,7 +275,7 @@ export default function Lightbox({ photo, onClose }: { photo: any; onClose: () =
 }
 ```
 
-### 4.9 src/app/layout.tsx
+### 4.9 src/app/layout.tsx
 
 ```tsx
 export const metadata = { title: "Photo Grid" };
@@ -282,7 +284,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-### 4.10 src/app/page.tsx
+### 4.10 src/app/page.tsx
 
 ```tsx
 import ThiingsGrid from "../components/ThiingsGrid";
@@ -322,7 +324,7 @@ export default function Page() {
 }
 ```
 
-### 4.11 src/app/api/upload/route.ts (Edge Function)
+### 4.11 src/app/api/upload/route.ts (Edge Function)
 
 ```ts
 import { getDb } from "../../../lib/db";
@@ -344,10 +346,10 @@ export async function POST(req: Request, env: Env) {
 }
 ```
 
-### 4.12 README.md (excerpt)
+### 4.12 README.md (excerpt)
 
 ```md
-## Quick Start (dev)
+## Quick Start (dev)
 ```bash
 bun install
 bun run dev
@@ -363,18 +365,7 @@ bun run import ./photos_raw
 ```md
 
 ---
-## 5 · Next Steps
-1. Copy this tree into Cursor IDE.
-2. Paste open‑source `ThiingsGrid.tsx`.
-3. Run `bun install` then `bun run dev` – you'll have a local edge‑compatible server.
-4. Run `bun run import ./photos_raw` to analyse colours.
-5. Implement the REST upload part in the script or call `/api/upload` manually.
-
-Enjoy your one‑click MVP! 🎉
-
-
-
-## 5 · Local Dev Mode (Bun + Wrangler)
+## 5 · Local Dev Mode (Bun + Wrangler)
 
 > Follow these steps inside **Cursor IDE**; they run on macOS, Linux, or Windows‑WSL.
 
@@ -482,4 +473,9 @@ The following notes capture the **delta between the original skeleton above and 
 ### 8.3  Open items
 * Hook the detail page data (title, tags, description) to real DB fields once available; currently mocked.
 * Add SEO/meta tags (`og:image`, dynamic `<title>`) per photo.
+
+---
+## UPDATE
+
+<!-- Append new requirements or scope changes here, e.g. authentication, payments integration, privacy policy pages -->
 

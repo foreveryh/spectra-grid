@@ -23,6 +23,15 @@ const mockDesc = [
   '人体与光影的交融，艺术与现实的对话。',
 ];
 
+const getPhotoUrl = (filename: string, r2_key: string) => {
+  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_R2_BASE && window.location.hostname !== 'localhost') {
+    // 生产环境用 R2 桶
+    return `${process.env.NEXT_PUBLIC_R2_BASE}${r2_key}`;
+  }
+  // 开发环境用 public 目录
+  return r2_key;
+};
+
 export default function PhotoDetail({ params }: { params: { id: string } }) {
   const router = useRouter();
   // 当用户按下 "s" 键时，返回上一页
@@ -48,7 +57,7 @@ export default function PhotoDetail({ params }: { params: { id: string } }) {
       <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 max-w-screen-lg w-full">
         {/* 图片 */}
         <img
-          src={`${photo.r2_key}?width=800&format=webp`}
+          src={`${getPhotoUrl(photo.filename, photo.r2_key)}?width=800&format=webp`}
           alt={photo.filename}
           className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-[600px] rounded-xl shadow-2xl bg-white object-contain"
         />
@@ -68,7 +77,7 @@ export default function PhotoDetail({ params }: { params: { id: string } }) {
               Back to Grid
             </button>
             <a
-              href={`${photo.r2_key}?width=1600&format=webp`}
+              href={`${getPhotoUrl(photo.filename, photo.r2_key)}?width=1600&format=webp`}
               download={photo.filename}
               className="inline-flex items-center justify-center px-6 py-2 rounded-full border border-black text-black text-sm font-medium hover:bg-black hover:text-white transition-colors min-w-[140px]"
             >

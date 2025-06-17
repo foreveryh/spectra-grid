@@ -43,7 +43,7 @@ bun.lockb
 
 # photos
 /photos
-/photos.json 
+/photos.json
 /photos_raw
 /public/photos_raw
 /public/thumbs

@@ -37,14 +37,21 @@ next-env.d.ts
 # bun
 bun.lockb
 
+# env 
+.env
+.env.local
+
 # photos
 /photos
 /photos.json 
 /photos_raw
 /public/photos_raw
+/public/thumbs
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+.wrangler/

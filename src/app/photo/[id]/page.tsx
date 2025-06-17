@@ -3,6 +3,7 @@
 import { photos as mockPhotos } from '../../../lib/mockData';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
+import { useEffect } from 'react';
 
 const mockTags = [
   ['摄影', '黑白'],
@@ -23,6 +24,16 @@ const mockDesc = [
 
 export default function PhotoDetail({ params }: { params: { id: string } }) {
   const router = useRouter();
+  // 当用户按下 "s" 键时，返回上一页
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 's') {
+        router.back();
+      }
+    };
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [router]);
   const photo = mockPhotos.find((p: any) => String(p.id) === params.id);
   if (!photo) return <div className="p-8 text-xl">图片不存在</div>;
   // mock 标签和描述
@@ -63,6 +74,8 @@ export default function PhotoDetail({ params }: { params: { id: string } }) {
               Download Image
             </a>
           </div>
+          {/* 键盘快捷键提示 */}
+          <p className="mt-2 text-xs text-gray-500 italic select-none sm:ml-[2px]">Press "s" to close</p>
         </div>
       </div>
       {/* 右上角关闭按钮 */}

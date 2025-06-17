@@ -16,13 +16,17 @@
     "next": "14.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "drizzle-orm": "^0.30.8"
   },
   "devDependencies": {
-    "wrangler": "^3.21.0",
-    "typescript": "5.5.4",
-    "tailwindcss": "^3.4.4",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "autoprefixer": "^10.4.16",
     "postcss": "^8.4.33",
-    "autoprefixer": "^10.4.16"
+    "tailwindcss": "^3.4.4",
+    "typescript": "5.5.4",
+    "wrangler": "^4.20.0",
+    "eslint": "^8.57.0"
   }
 }

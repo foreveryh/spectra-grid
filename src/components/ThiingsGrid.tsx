@@ -12,7 +12,7 @@ function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ) {
-  let timeoutId: number | undefined = undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
 
   const debouncedFn = function (...args: Parameters<T>) {
     if (timeoutId) {
@@ -39,7 +39,7 @@ function throttle<T extends (...args: unknown[]) => unknown>(
   options: { leading?: boolean; trailing?: boolean } = {}
 ) {
   let lastCall = 0;
-  let timeoutId: number | undefined = undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
   const { leading = true, trailing = true } = options;
 
   const throttledFn = function (...args: Parameters<T>) {

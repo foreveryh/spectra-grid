@@ -1,6 +1,9 @@
-name = "photo-grid"
+name = "spectra-grid"
 compatibility_date = "2025-06-16"
 compatibility_flags = ["nodejs_compat"]
+
+[pages]
+project_name = "spectra-grid"
 
 [[r2_buckets]]
 binding = "PHOTOS_BUCKET"
@@ -9,7 +12,8 @@ bucket_name = "photos"
 [[d1_databases]]
 binding = "DB"
 database_name = "photo_meta"
+database_id = "cfc74ead-6694-438f-b96f-9c77fc90c555"
 
 [vars]
 GRID_W = "240"
-GRID_H = "320" 
+GRID_H = "240" 

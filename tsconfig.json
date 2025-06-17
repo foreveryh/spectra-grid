@@ -20,7 +20,8 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "target": "es2020"
   },
   "include": [
     "next-env.d.ts",
@@ -29,6 +30,7 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "scripts"
   ]
 }

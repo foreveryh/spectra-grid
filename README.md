@@ -62,6 +62,25 @@ Production runtime fetches data via `/api/photos` (Edge Function, reads D1) whil
 
 ---
 
+## Deploying to Cloudflare Pages (next-on-pages scheme)
+
+```bash
+# 0) 先准备好 R2/D1 数据（同上）
+
+# 1) 构建 Next.js 产物
+bun run build
+
+# 2) 用 next-on-pages 导出 Cloudflare Pages 兼容产物
+bun run export
+
+# 3) 部署到 Cloudflare Pages
+wrangler pages deploy .vercel/output/static
+```
+
+This new workflow, based on next-on-pages, produces much smaller output and eliminates the 25 MiB single file limit. It is the recommended way to deploy to Cloudflare Pages.
+
+---
+
 ## Scripts
 
 | Command | Purpose |
@@ -76,4 +95,14 @@ Production runtime fetches data via `/api/photos` (Edge Function, reads D1) whil
 ---
 
 ## Roadmap
-See [`TODO.md`](./TODO.md) and the original [MVP PRD](./mvp_photo_grid_prd_and_skeleton.md) for full backlog & milestones. 
+See [`TODO.md`](./TODO.md) and the original [MVP PRD](./mvp_photo_grid_prd_and_skeleton.md) for full backlog & milestones.
+
+## Dependencies
+
+- **@cloudflare/next-on-pages** (devDependencies):
+  Enables one-command export of Next.js projects to Cloudflare Pages compatible output, automatically splits Edge Functions, and solves the 25 MiB single file limit.
+- **wrangler** (devDependencies):
+  Official Cloudflare CLI for deploying to Pages, managing R2/D1 resources, and local Edge Functions debugging.
+- **@cloudflare/workers-types**:
+  TypeScript type definitions for Cloudflare Workers, ensuring type-safe development.
+- Other dependencies such as next, react, sharp, colorthief, exifreader, etc. are required for the core features of the project. 

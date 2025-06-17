@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'edge';
 
 import { photos as mockPhotos } from '../../../lib/mockData';
 import { useRouter } from 'next/navigation';

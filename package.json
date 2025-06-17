@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bunx next dev",
     "build": "bunx next build",
-    "deploy": "wrangler pages deploy ./.next",
+    "export": "next-on-pages",
+    "deploy": "wrangler pages deploy ./dist",
     "import": "bun run scripts/import.ts"
   },
   "dependencies": {
@@ -20,13 +21,14 @@
     "drizzle-orm": "^0.30.8"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.12",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
     "autoprefixer": "^10.4.16",
+    "eslint": "^8.57.0",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.4",
     "typescript": "5.5.4",
-    "wrangler": "^4.20.0",
-    "eslint": "^8.57.0"
+    "wrangler": "^4.20.0"
   }
 }

@@ -1,5 +1,6 @@
 import '../globals.css';
 import AgeGate from "../components/AgeGate";
+import PhotoCount from "../components/PhotoCount";
 
 export const metadata = {
   title: {
@@ -68,5 +69,5 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html><body className="bg-black text-white"><AgeGate />{children}</body></html>;
+  return <html><body className="bg-black text-white"><AgeGate /><PhotoCount />{children}</body></html>;
 } 

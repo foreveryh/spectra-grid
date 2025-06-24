@@ -14,11 +14,12 @@ async function uploadFile(localPath: string, r2Key: string, contentType?: string
     return;
   }
 
-  const args = ["r2", "object", "put", `${BUCKET}/${r2Key}`, "--file", localPath];
+  const args = ["r2", "object", "put", `${BUCKET}/${r2Key}`, "--file", localPath, "--remote"];
   if (contentType) args.push("--content-type", contentType);
 
   try {
-    console.log(`↑ Uploading: ${r2Key}`);
+    const cmdString = `wrangler ${args.join(' ')}`;
+    console.log(`↑ Executing: ${cmdString}`);
     await $`wrangler ${args}`;
   } catch (err: any) {
     const msg = String(err.stderr || err.message || err);
@@ -47,9 +48,27 @@ async function main() {
       continue;
     }
     
-    // Upload original
+    // 问题发现：新增图片的r2_key格式(photos_raw/1750774*.jpg)与原始文件(2025-*-*.jpg)不匹配
+    // 解决方案：将r2_key视为目标路径，原始图片在photos_raw下查找
     const originalLocalPath = path.join("photos_raw", photo.filename);
-    await uploadFile(originalLocalPath, photo.r2_key);
+    
+    // 确保 r2_key 不以斜杠开头，保持统一的格式
+    const normalizedR2Key = photo.r2_key.startsWith('/') ? photo.r2_key.substring(1) : photo.r2_key;
+    
+    // 判断r2_key中是否包含时间戳（新图片格式）
+    const isNewFormat = normalizedR2Key.includes('175077');
+    if (isNewFormat) {
+      console.log(`Processing new format image: ${photo.filename} -> ${normalizedR2Key}`);
+      
+      // 测试文件是否存在
+      if (!(await fs.access(originalLocalPath).then(() => true).catch(() => false))) {
+        console.log(`! Local file for ${photo.filename} does NOT exist: ${originalLocalPath}`);
+      } else {
+        console.log(`✓ Local file exists: ${originalLocalPath}`);
+      }
+    }
+    
+    await uploadFile(originalLocalPath, normalizedR2Key);
 
     // Upload thumbnail
     const thumbLocalPath = path.join("public", photo.thumb_key);

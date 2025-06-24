@@ -26,7 +26,16 @@ const mockDesc = [
 const getPhotoUrl = (filename: string, r2_key: string) => {
   if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_R2_BASE && window.location.hostname !== 'localhost') {
     // 生产环境用 R2 桶
-    return `${process.env.NEXT_PUBLIC_R2_BASE}${r2_key}`;
+    const baseUrl = process.env.NEXT_PUBLIC_R2_BASE;
+    
+    // 规范化 r2_key - 移除开头的斜杠（如果有）
+    const normalizedKey = r2_key.startsWith('/') ? r2_key.substring(1) : r2_key;
+    
+    // 规范化基础URL - 确保末尾有斜杠
+    const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    
+    // 将它们组合起来，确保中间有正确的分隔符
+    return `${normalizedBase}${normalizedKey}`;
   }
   // 开发环境用 public 目录
   return r2_key;

@@ -28,8 +28,10 @@ preview_bucket_name = "photos-preview"   # optional
 ### 0.4  Useful bucket commands
 ```bash
 wrangler r2 bucket list                 # list all buckets
-wrangler r2 object put  <bucket>/<key> --file ./local/file.ext  --content-type image/avif
+wrangler r2 object put <bucket>/<key> --file ./local/file.ext --content-type image/avif --remote  # Note: --remote flag is required!
 ```
+
+> ⚠️ **IMPORTANT**: The `--remote` flag is required to upload to the actual R2 storage. Without this flag, wrangler defaults to uploading to a local simulated environment rather than the remote R2 bucket.
 
 > ℹ️ Wrangler v4 currently does **not** provide `r2 object head/list`. The upload script works around this limitation by **attempting an upload and catching the resulting 412** if the object already exists, so no extra step is required.
 
@@ -80,6 +82,8 @@ The component should use the `thumb_key` for the `srcSet` in a `<picture>` eleme
 bun run scripts/upload-r2.ts
 ```
 
+This script reads `r2_key` and `thumb_key` values from the `photos.json` file and automatically uploads original images and thumbnails to the remote R2 storage. The script includes the `--remote` flag for proper remote uploading and handles different file path formats, ensuring path normalization.
+
 ### 2.4 Sync metadata to D1 (`scripts/sync-d1.ts`)
 ```bash
 # local dev DB
@@ -124,8 +128,11 @@ When you upload via `wrangler r2 object put`, Wrangler tries to infer `Content-T
   ```bash
   wrangler r2 object put thumbs/foo_240.avif \
     --file ./public/thumbs/foo_240.avif \
-    --content-type image/avif
+    --content-type image/avif \
+    --remote
   ```
+
+> Note: Always use the `--remote` flag for actual remote uploads, rather than uploading to Wrangler's local simulated environment.
 
 ### 5.2 Browser fallback strategy
 `<picture>` fallback order example:
@@ -174,8 +181,10 @@ Add to **GitHub Actions**:
 - name: Generate thumbnails
   run: bun run scripts/import.ts ./photos_raw --generate-only
 - name: Upload to R2
-  run: bun run scripts/upload-r2.ts public/thumbs photos_raw
+  run: bun run scripts/upload-r2.ts
 ```
+
+Note: The `upload-r2.ts` script now includes the `--remote` flag internally, ensuring proper uploads to the remote R2 storage and consistent path handling.
 
 ---
 ## 6 · FAQ
@@ -187,3 +196,6 @@ Add to **GitHub Actions**:
 
 **Q:** _Can I run import script inside Wrangler?_  
 **A:** Yes, but not recommended—sharp is heavy. Keep it local CI/CLI.
+
+**Q:** _Why are my files not uploading to R2 despite no errors in the script?_  
+**A:** Make sure you're using the `--remote` flag with wrangler commands. Without this flag, wrangler defaults to uploading to a local simulated environment rather than the actual remote R2 bucket. The `upload-r2.ts` script has been updated to include this flag.

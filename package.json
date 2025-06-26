@@ -5,20 +5,21 @@
     "dev": "bunx next dev",
     "build": "bunx next build",
     "export": "next-on-pages",
-    "deploy": "wrangler pages deploy ./dist",
+    "deploy": "wrangler pages deploy ./.vercel/output/static",
     "import": "bun run scripts/import.ts"
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4",
     "@headlessui/react": "2.2.4",
     "colorthief": "^2.6.0",
+    "drizzle-orm": "^0.30.8",
     "exifreader": "^4.31.0",
     "lucide-react": "^0.390.0",
     "next": "14.1.0",
+    "p-limit": "^6.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "sharp": "^0.33.0",
-    "drizzle-orm": "^0.30.8"
+    "sharp": "^0.33.0"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.13.12",
@@ -29,6 +30,6 @@
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.4",
     "typescript": "5.5.4",
-    "wrangler": "^4.20.0"
+    "wrangler": "^4.22.0"
   }
 }

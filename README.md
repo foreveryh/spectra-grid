@@ -37,47 +37,36 @@ That's it – **no Cloudflare account needed** for local work.
 
 ---
 
-## Deploying to Cloudflare R2 + D1
+## Deploying to Cloudflare
+
+This project is designed to be deployed to Cloudflare Pages, using R2 for object storage and D1 for metadata.
+
+The recommended and tested workflow uses `@cloudflare/next-on-pages` to create a Pages-compatible build.
+
+**Deployment Steps:**
 
 ```bash
-# 0) prerequisites (run once)
-wrangler login                                  # OAuth
-wrangler d1 execute DB --file db/schema.sql     # --remote for production
+# 0) One-time setup for your Cloudflare account
+wrangler login
+wrangler d1 execute DB --file db/schema.sql --remote
 
-# 1) generate metadata & thumbnails
+# 1) Import local images, generate metadata and thumbnails
 bun run scripts/import.ts ./photos_raw
 
-# 2) upload originals & thumbs to R2
-bun run scripts/upload-r2.ts                    # idempotent
+# 2) Upload original images and thumbnails to R2
+bun run scripts/upload-r2.ts
+bun run scripts/upload-thumbs.ts # If you need to upload only thumbnails
 
-# 3) sync metadata to D1
-bun run scripts/sync-d1.ts --remote             # local omit --remote
+# 3) Sync local metadata from photos.json to the production D1 database
+bun run scripts/sync-d1.ts --remote
 
-# 4) deploy the static Next.js build
+# 4) Build and deploy the application to Cloudflare Pages
 bun run build
-wrangler pages deploy ./.next
-```
-
-Production runtime fetches data via `/api/photos` (Edge Function, reads D1) while local dev still uses the static `photos.json` fallback.
-
----
-
-## Deploying to Cloudflare Pages (next-on-pages scheme)
-
-```bash
-# 0) Prepare R2/D1 data first (same as previous section)
-
-# 1) Build the Next.js project
-bun run build
-
-# 2) Export Cloudflare Pages compatible output with next-on-pages
 bun run export
-
-# 3) Deploy to Cloudflare Pages
-wrangler pages deploy .vercel/output/static --project-name YOUR_PROJECT_NAME
+bun run deploy
 ```
 
-This new workflow, based on next-on-pages, produces much smaller output and eliminates the 25 MiB single file limit. It is the recommended way to deploy to Cloudflare Pages.
+This process ensures that all assets are correctly uploaded and the Next.js application is properly adapted for the Cloudflare Edge environment.
 
 ---
 
@@ -88,9 +77,13 @@ This new workflow, based on next-on-pages, produces much smaller output and elim
 | `bun run dev` | Next.js dev server (rewrites `/api/*` to Wrangler dev if present) |
 | `wrangler dev` | Cloudflare Functions & D1/R2 emulator on <http://127.0.0.1:8787> |
 | `bun run scripts/import.ts ./photos_raw` | Analyse colours & create thumbnails |
-| `bun run scripts/upload-r2.ts` | Incremental upload originals + thumbs to R2 |
+| `bun run scripts/upload-r2.ts` | Incremental upload originals to R2 |
+| `bun run scripts/upload-thumbs.ts` | Incremental upload thumbnails to R2 |
 | `bun run scripts/sync-d1.ts` | Write `photos.json` records to D1 (add `--remote` for prod) |
 | `bun run scripts/purge-deleted.ts` | Nightly purge of soft-deleted objects |
+| `bun run build` | Builds the Next.js application for production |
+| `bun run export` | Exports the build to a Cloudflare Pages compatible format |
+| `bun run deploy` | Deploys the application to Cloudflare Pages |
 
 ---
 

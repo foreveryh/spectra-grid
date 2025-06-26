@@ -78,4 +78,4 @@ async function main() {
   console.log("\nUpload process complete.");
 }
 
-main(); 
+main();

@@ -6,7 +6,7 @@ export const runtime = 'edge';
 export async function GET(req: Request) {
   // Try Cloudflare Pages env binding first (available when deployed)
   // @ts-ignore – env is injected by Pages runtime
-  const env = (globalThis as any).env as { DB?: any } | undefined;
+  const env = (globalThis as any).env as { DB?: any, NEXT_PUBLIC_R2_BASE?: string } | undefined;
 
   let rows: any[] = [];
   try {
@@ -24,7 +24,23 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500 });
   }
 
-  return new Response(JSON.stringify(rows), {
+  // Determine R2_BASE_URL from env (Pages Functions) or process.env (local Next.js dev)
+  const r2BaseUrl = env?.NEXT_PUBLIC_R2_BASE || process.env.NEXT_PUBLIC_R2_BASE;
+
+  let photosToReturn = [];
+  if (r2BaseUrl) {
+    for (const photo of rows) {
+      photosToReturn.push({
+        ...photo,
+        r2_key: photo.r2_key ? new URL(photo.r2_key, r2BaseUrl).toString() : null,
+        thumb_key: photo.thumb_key ? new URL(photo.thumb_key, r2BaseUrl).toString() : null,
+      });
+    }
+  } else {
+    photosToReturn = rows;
+  }
+
+  return new Response(JSON.stringify(photosToReturn), {
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
   });
 } 

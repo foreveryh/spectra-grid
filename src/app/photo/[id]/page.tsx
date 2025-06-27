@@ -38,7 +38,7 @@ const getPhotoUrl = (filename: string, r2_key: string) => {
     return `${normalizedBase}${normalizedKey}`;
   }
   // 开发环境用 public 目录
-  return r2_key;
+  return `/${r2_key}`;
 };
 
 export default function PhotoDetail({ params }: { params: { id: string } }) {

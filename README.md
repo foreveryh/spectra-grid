@@ -74,6 +74,7 @@ This process ensures that all assets are correctly uploaded and the Next.js appl
 
 | Command | Purpose |
 |---------|---------|
+| `bun run scripts/sync-all.ts` | 一键同步所有图片、缩略图和数据库 |
 | `bun run dev` | Next.js dev server (rewrites `/api/*` to Wrangler dev if present) |
 | `wrangler dev` | Cloudflare Functions & D1/R2 emulator on <http://127.0.0.1:8787> |
 | `bun run scripts/import.ts ./photos_raw` | Analyse colours & create thumbnails |

@@ -25,26 +25,38 @@ const metaMap = new Map(meta.map(m => [m.filename, m]));
 
 for (const f of files) {
   let record = metaMap.get(f);
+  const isNewRecord = !record;
 
-  // --- Thumbnail Generation ---
-  // Always check if thumbnail exists, generate if not.
+  // If it's a new photo, create a record with a new ID immediately.
+  if (isNewRecord) {
+    record = {
+      id: meta.length + 1,
+      filename: f,
+    } as any;
+  }
+
+  // --- Key Generation ---
   const buf = await fs.readFile(path.join(dir, f));
   const hash = crypto.createHash("sha1").update(buf).digest("hex").slice(0, 8);
-  const baseName = `${Date.now()}_${hash}`;
+  const originalBaseName = path.parse(f).name;
   const ext = path.extname(f).toLowerCase();
   
-  const thumbName = `${baseName}_240.avif`;
-  const thumbPath = path.join(thumbDir, thumbName);
+  // r2_key 只用原始文件名，不带 hash
+  record.r2_key = `photos_raw/${f}`;
+  // thumb_key 仍然带 hash，避免缩略图重名
+  record.thumb_key = `thumbs/${record.id}_${originalBaseName}_${hash}_thumb.avif`;
   
-  // A more robust check for thumbnail existence
+  // thumbPath is the local path for the generated thumbnail
+  const thumbPath = path.join(thumbDir, `${record.id}_${originalBaseName}_${hash}_thumb.avif`);
+
+  // --- Thumbnail Generation ---
+  // We check if the physical file exists. If not, we generate it.
   let thumbExists = false;
-  if (record && record.thumb_key) {
-    try {
-      await fs.access(path.join("public", record.thumb_key));
-      thumbExists = true;
-    } catch {
-      // File doesn't exist, will be generated
-    }
+  try {
+    await fs.access(thumbPath);
+    thumbExists = true;
+  } catch {
+    // File doesn't exist
   }
 
   if (!thumbExists) {
@@ -59,27 +71,20 @@ for (const f of files) {
   }
 
   // --- Metadata Update ---
-  if (!record) {
+  // If it was a new record, we need to populate the color metadata and add it to our lists.
+  if (isNewRecord) {
     const [r, g, b] = await ColorThief.getColor(path.join(dir, f));
     const hsl = rgb2hsl(r, g, b);
 
-    record = {
-      id: meta.length + 1,
-      filename: f,
-      r2_key: `photos_raw/${baseName}${ext}`,
-      thumb_key: `thumbs/${thumbName}`,
-      dominant_rgb: `#${r.toString(16)}${g.toString(16)}${b.toString(16)}`,
-      hue: hsl[0],
-      saturation: hsl[1],
-      lightness: hsl[2],
-      is_bw: hsl[1] < 0.08,
-      palette: (await ColorThief.getPalette(path.join(dir, f), 5)).map(p => `#${p.map(x => x.toString(16).padStart(2, "0")).join("")}`)
-    };
+    record.dominant_rgb = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    record.hue = hsl[0];
+    record.saturation = hsl[1];
+    record.lightness = hsl[2];
+    record.is_bw = hsl[1] < 0.08;
+    record.palette = (await ColorThief.getPalette(path.join(dir, f), 5)).map(p => `#${p.map(x => x.toString(16).padStart(2, "0")).join("")}`);
+    
     meta.push(record);
     metaMap.set(f, record);
-  } else if (!record.thumb_key) {
-    // If record exists but is missing thumb_key, update it.
-    record.thumb_key = `thumbs/${thumbName}`;
   }
 }
 

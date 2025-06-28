@@ -17,12 +17,14 @@ function pseudoRandomIndex(x: number, y: number, n: number) {
 
 // localStorage 持久化工具
 function saveGridState({ photos, page, hasMore, offset }) {
+  if (typeof window === 'undefined') return;
   localStorage.setItem('grid_photos', JSON.stringify(photos));
   localStorage.setItem('grid_page', String(page));
   localStorage.setItem('grid_hasMore', String(hasMore));
   localStorage.setItem('grid_offset', JSON.stringify(offset));
 }
 function loadGridState() {
+  if (typeof window === 'undefined') return { photos: [], page: 1, hasMore: true, offset: { x: 0, y: 0 } };
   const photos = JSON.parse(localStorage.getItem('grid_photos') || '[]');
   const page = parseInt(localStorage.getItem('grid_page') || '1');
   const hasMore = localStorage.getItem('grid_hasMore') === 'true';
@@ -31,17 +33,26 @@ function loadGridState() {
 }
 
 export default function Page() {
-  // 1. 初始化时优先从 localStorage 恢复
-  const { photos: savedPhotos, page: savedPage, hasMore: savedHasMore, offset: savedOffset } = loadGridState();
-  const [photos, setPhotos] = useState(savedPhotos.length ? savedPhotos : mockPhotos);
-  const [page, setPage] = useState(savedPage || 1);
-  const [hasMore, setHasMore] = useState(savedHasMore ?? true);
-  const [offset, setOffset] = useState(savedOffset || { x: 0, y: 0 });
+  const [photos, setPhotos] = useState<Photo[]>(mockPhotos);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [rehydrated, setRehydrated] = useState(false);
   const loadingRef = useRef(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // 2. 加载图片逻辑
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { photos: savedPhotos, page: savedPage, hasMore: savedHasMore, offset: savedOffset } = loadGridState();
+      if (savedPhotos.length) setPhotos(savedPhotos);
+      if (savedPage) setPage(savedPage);
+      if (typeof savedHasMore === 'boolean') setHasMore(savedHasMore);
+      if (savedOffset) setOffset(savedOffset);
+      setRehydrated(true);
+    }
+  }, []);
+
   const loadPhotos = useCallback(async (pageNum: number = 1) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -76,23 +87,26 @@ export default function Page() {
     }
   }, []);
 
-  // 3. 首次挂载时恢复数据
   useEffect(() => {
-    if (!savedPhotos.length) {
-      loadPhotos(1);
+    if (typeof window !== 'undefined') {
+      const { photos: savedPhotos } = loadGridState();
+      if (!savedPhotos.length) {
+        loadPhotos(1);
+      }
     }
-  }, []);
+  }, [loadPhotos]);
 
-  // 4. 状态变化时保存到 localStorage
   useEffect(() => {
     saveGridState({ photos, page, hasMore, offset });
   }, [photos, page, hasMore, offset]);
 
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !loadingRef.current) {
-      loadPhotos(page + 1);
-    }
-  }, [hasMore, page, loadPhotos]);
+  if (!rehydrated) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-black text-white">
+        <span className="text-lg opacity-60">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-screen overflow-hidden">

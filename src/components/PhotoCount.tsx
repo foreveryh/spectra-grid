@@ -13,13 +13,16 @@ export default function PhotoCount({ className = '' }: PhotoCountProps) {
     // Fetch photos from API to work in both development and production environments
     async function fetchPhotoCount() {
       try {
-        const response = await fetch('/api/photos');
+        const response = await fetch('/api/photos?page=1&limit=1');
         if (!response.ok) {
           throw new Error('Failed to fetch photos');
         }
-        const photos = await response.json();
-        if (Array.isArray(photos)) {
-          setCount(photos.length);
+        const data = await response.json() as { photos?: any[]; pagination?: { total?: number } };
+        // 兼容新老格式
+        if (data?.pagination?.total) {
+          setCount(data.pagination.total);
+        } else if (Array.isArray(data)) {
+          setCount(data.length);
         }
       } catch (error) {
         console.error('Error fetching photo count:', error);

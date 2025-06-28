@@ -114,7 +114,8 @@ export type ThiingsGridProps = {
   renderItem: (itemConfig: ItemConfig) => React.ReactNode;
   className?: string;
   initialPosition?: Position;
-  onItemClick?: (gridIndex: number) => void;
+  onItemClick?: (gridIndex: number, position: Position) => void;
+  onOffsetChange?: (offset: Position) => void;
 };
 
 class ThiingsGrid extends Component<ThiingsGridProps, State> {
@@ -156,6 +157,9 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
 
   componentDidMount() {
     this.isComponentMounted = true;
+    if (this.props.initialPosition) {
+      this.setState({ offset: { ...this.props.initialPosition }, restPos: { ...this.props.initialPosition } });
+    }
     this.updateGridItems();
 
     // Add non-passive event listener
@@ -280,36 +284,38 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
     this.debouncedStopMoving();
   };
 
+  private setOffsetAndNotify = (offset: Position) => {
+    this.setState({ offset }, () => {
+      if (this.props.onOffsetChange) {
+        this.props.onOffsetChange(offset);
+      }
+    });
+  };
+
   private animate = () => {
     if (!this.isComponentMounted) return;
-
     const currentTime = performance.now();
     const deltaTime = currentTime - this.lastUpdateTime;
-
     if (deltaTime >= UPDATE_INTERVAL) {
       const { velocity } = this.state;
       const speed = Math.sqrt(
         velocity.x * velocity.x + velocity.y * velocity.y
       );
-
       if (speed < MIN_VELOCITY) {
         this.setState({ velocity: { x: 0, y: 0 } });
         return;
       }
-
-      // Apply non-linear deceleration based on speed
       let deceleration = FRICTION;
       if (speed < VELOCITY_THRESHOLD) {
-        // Apply stronger deceleration at lower speeds for more natural stopping
         deceleration = FRICTION * (speed / VELOCITY_THRESHOLD);
       }
-
+      const newOffset = {
+        x: this.state.offset.x + this.state.velocity.x,
+        y: this.state.offset.y + this.state.velocity.y,
+      };
+      this.setOffsetAndNotify(newOffset);
       this.setState(
-        (prevState) => ({
-          offset: {
-            x: prevState.offset.x + prevState.velocity.x,
-            y: prevState.offset.y + prevState.velocity.y,
-          },
+        prevState => ({
           velocity: {
             x: prevState.velocity.x * deceleration,
             y: prevState.velocity.y * deceleration,
@@ -317,10 +323,8 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
         }),
         this.debouncedUpdateGridItems
       );
-
       this.lastUpdateTime = currentTime;
     }
-
     this.animationFrame = requestAnimationFrame(this.animate);
   };
 
@@ -328,7 +332,6 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
     }
-
     this.setState({
       isDragging: true,
       startPos: {
@@ -337,28 +340,21 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
       },
       velocity: { x: 0, y: 0 },
     });
-
     this.lastPos = { x: p.x, y: p.y };
   };
+
   private handleMove = (p: Position) => {
     if (!this.state.isDragging) return;
-
     const currentTime = performance.now();
     const timeDelta = currentTime - this.state.lastMoveTime;
-
-    // Calculate raw velocity based on position and time
     const rawVelocity = {
       x: (p.x - this.lastPos.x) / (timeDelta || 1),
       y: (p.y - this.lastPos.y) / (timeDelta || 1),
     };
-
-    // Add to velocity history and maintain fixed size
     const velocityHistory = [...this.state.velocityHistory, rawVelocity];
     if (velocityHistory.length > VELOCITY_HISTORY_SIZE) {
       velocityHistory.shift();
     }
-
-    // Calculate smoothed velocity using moving average
     const smoothedVelocity = velocityHistory.reduce(
       (acc, vel) => ({
         x: acc.x + vel.x / velocityHistory.length,
@@ -366,22 +362,22 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
       }),
       { x: 0, y: 0 }
     );
-
+    const newOffset = {
+      x: p.x - this.state.startPos.x,
+      y: p.y - this.state.startPos.y,
+    };
+    this.setOffsetAndNotify(newOffset);
     this.setState(
       {
         velocity: smoothedVelocity,
-        offset: {
-          x: p.x - this.state.startPos.x,
-          y: p.y - this.state.startPos.y,
-        },
         lastMoveTime: currentTime,
         velocityHistory,
       },
       this.updateGridItems
     );
-
     this.lastPos = { x: p.x, y: p.y };
   };
+
   private handleUp = (p?: Position) => {
     if (p && this.props.onItemClick) {
       // 计算移动距离
@@ -399,7 +395,7 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
           const gridX = Math.round(x / this.props.gridSize);
           const gridY = Math.round(y / this.props.gridSize);
           const gridIndex = this.getItemIndexForPosition(gridX, gridY);
-          this.props.onItemClick(gridIndex);
+          this.props.onItemClick(gridIndex, p);
         }
       }
     }
@@ -461,18 +457,16 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
 
   private handleWheel = (e: WheelEvent) => {
     e.preventDefault();
-
-    // Get the scroll deltas
     const deltaX = e.deltaX;
     const deltaY = e.deltaY;
-
+    const newOffset = {
+      x: this.state.offset.x - deltaX,
+      y: this.state.offset.y - deltaY,
+    };
+    this.setOffsetAndNotify(newOffset);
     this.setState(
-      (prevState) => ({
-        offset: {
-          x: prevState.offset.x - deltaX,
-          y: prevState.offset.y - deltaY,
-        },
-        velocity: { x: 0, y: 0 }, // Reset velocity when scrolling
+      prevState => ({
+        velocity: { x: 0, y: 0 },
       }),
       this.debouncedUpdateGridItems
     );

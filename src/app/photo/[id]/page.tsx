@@ -1,10 +1,10 @@
 'use client';
 export const runtime = 'edge';
 
-import { photos as mockPhotos } from '../../../lib/mockData';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Photo } from '../../../types/photo';
 
 const mockTags = [
   ['摄影', '黑白'],
@@ -24,6 +24,11 @@ const mockDesc = [
 ];
 
 const getPhotoUrl = (filename: string, r2_key: string) => {
+  // 如果 r2_key 已经是完整的 URL，直接返回
+  if (r2_key.startsWith('http://') || r2_key.startsWith('https://')) {
+    return r2_key;
+  }
+  
   if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_R2_BASE && window.location.hostname !== 'localhost') {
     // 生产环境用 R2 桶
     const baseUrl = process.env.NEXT_PUBLIC_R2_BASE;
@@ -43,6 +48,10 @@ const getPhotoUrl = (filename: string, r2_key: string) => {
 
 export default function PhotoDetail({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const [photo, setPhoto] = useState<Photo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // 当用户按下 "s" 键时，返回上一页
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
@@ -53,8 +62,50 @@ export default function PhotoDetail({ params }: { params: { id: string } }) {
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
   }, [router]);
-  const photo = mockPhotos.find((p: any) => String(p.id) === params.id);
-  if (!photo) return <div className="p-8 text-xl">图片不存在</div>;
+
+  // 获取图片数据
+  useEffect(() => {
+    const fetchPhoto = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/photo/${params.id}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('图片不存在');
+          } else {
+            throw new Error('Failed to fetch photo');
+          }
+          return;
+        }
+        const photoData = await response.json() as Photo;
+        setPhoto(photoData);
+      } catch (err) {
+        setError('加载失败');
+        console.error('Error fetching photo:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPhoto();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#faf9f6]">
+        <div className="text-xl">加载中...</div>
+      </div>
+    );
+  }
+
+  if (error || !photo) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#faf9f6]">
+        <div className="text-xl">{error || '图片不存在'}</div>
+      </div>
+    );
+  }
+
   // mock 标签和描述
   const tagIdx = Number(params.id) % mockTags.length;
   const descIdx = Number(params.id) % mockDesc.length;

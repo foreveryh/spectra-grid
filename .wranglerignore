@@ -1,2 +1,14 @@
 .next/cache/
+.next/server/
+.next/static/
+.next/trace/
+.next/webpack/
+.next/build-manifest.json
+.next/prerender-manifest.json
+.next/routes-manifest.json
+.next/trace
 public/thumbs
+node_modules/
+.git/
+.env*
+*.log

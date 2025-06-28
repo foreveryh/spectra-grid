@@ -37,9 +37,15 @@ export async function GET(req: Request) {
   let photosToReturn = [];
   if (r2BaseUrl) {
     for (const photo of rows) {
+      // 确保 r2_key 包含 photos_raw/ 前缀
+      let normalizedR2Key = photo.r2_key;
+      if (!normalizedR2Key.startsWith('photos_raw/') && !normalizedR2Key.startsWith('http')) {
+        normalizedR2Key = `photos_raw/${normalizedR2Key}`;
+      }
+      
       photosToReturn.push({
         ...photo,
-        r2_key: photo.r2_key ? new URL(photo.r2_key, r2BaseUrl).toString() : null,
+        r2_key: normalizedR2Key ? new URL(normalizedR2Key, r2BaseUrl).toString() : null,
         thumb_key: photo.thumb_key ? new URL(photo.thumb_key, r2BaseUrl).toString() : null,
       });
     }

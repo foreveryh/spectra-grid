@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 // Grid physics constants
 const MIN_VELOCITY = 0.2;
@@ -91,18 +91,6 @@ type GridItem = {
   gridIndex: number;
 };
 
-type State = {
-  offset: Position;
-  isDragging: boolean;
-  startPos: Position;
-  restPos: Position;
-  velocity: Position;
-  gridItems: GridItem[];
-  isMoving: boolean;
-  lastMoveTime: number;
-  velocityHistory: Position[];
-};
-
 export type ItemConfig = {
   isMoving: boolean;
   position: Position;
@@ -118,113 +106,37 @@ export type ThiingsGridProps = {
   onOffsetChange?: (offset: Position) => void;
 };
 
-class ThiingsGrid extends Component<ThiingsGridProps, State> {
-  private containerRef: React.RefObject<HTMLElement | null>;
-  private lastPos: Position;
-  private animationFrame: number | null;
-  private isComponentMounted: boolean;
-  private lastUpdateTime: number;
-  private debouncedUpdateGridItems: ReturnType<typeof throttle>;
+const ThiingsGrid: React.FC<ThiingsGridProps> = ({
+  gridSize,
+  renderItem,
+  className,
+  initialPosition,
+  onItemClick,
+  onOffsetChange,
+}) => {
+  // State
+  const [offset, setOffset] = useState<Position>(
+    initialPosition || { x: 0, y: 0 }
+  );
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPos, setStartPos] = useState<Position>({ x: 0, y: 0 });
+  const [restPos, setRestPos] = useState<Position>(
+    initialPosition || { x: 0, y: 0 }
+  );
+  const [velocity, setVelocity] = useState<Position>({ x: 0, y: 0 });
+  const [gridItems, setGridItems] = useState<GridItem[]>([]);
+  const [isMoving, setIsMoving] = useState(false);
+  const [lastMoveTime, setLastMoveTime] = useState(0);
+  const [velocityHistory, setVelocityHistory] = useState<Position[]>([]);
 
-  constructor(props: ThiingsGridProps) {
-    super(props);
-    const offset = this.props.initialPosition || { x: 0, y: 0 };
-    this.state = {
-      offset: { ...offset },
-      restPos: { ...offset },
-      startPos: { ...offset },
-      velocity: { x: 0, y: 0 },
-      isDragging: false,
-      gridItems: [],
-      isMoving: false,
-      lastMoveTime: 0,
-      velocityHistory: [],
-    };
-    this.containerRef = React.createRef();
-    this.lastPos = { x: 0, y: 0 };
-    this.animationFrame = null;
-    this.isComponentMounted = false;
-    this.lastUpdateTime = 0;
-    this.debouncedUpdateGridItems = throttle(
-      this.updateGridItems,
-      UPDATE_INTERVAL,
-      {
-        leading: true,
-        trailing: true,
-      }
-    );
-  }
+  // Refs
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastPosRef = useRef<Position>({ x: 0, y: 0 });
+  const animationFrameRef = useRef<number | null>(null);
+  const lastUpdateTimeRef = useRef<number>(0);
 
-  componentDidMount() {
-    this.isComponentMounted = true;
-    if (this.props.initialPosition) {
-      this.setState({ offset: { ...this.props.initialPosition }, restPos: { ...this.props.initialPosition } });
-    }
-    this.updateGridItems();
-
-    // Add non-passive event listener
-    if (this.containerRef.current) {
-      this.containerRef.current.addEventListener("wheel", this.handleWheel, {
-        passive: false,
-      });
-      this.containerRef.current.addEventListener(
-        "touchmove",
-        this.handleTouchMove,
-        { passive: false }
-      );
-    }
-  }
-
-  componentWillUnmount() {
-    this.isComponentMounted = false;
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
-    }
-    this.debouncedUpdateGridItems.cancel();
-
-    // Remove event listeners
-    if (this.containerRef.current) {
-      this.containerRef.current.removeEventListener("wheel", this.handleWheel);
-      this.containerRef.current.removeEventListener(
-        "touchmove",
-        this.handleTouchMove
-      );
-    }
-  }
-
-  public publicGetCurrentPosition = () => {
-    return this.state.offset;
-  };
-
-  private calculateVisiblePositions = (): Position[] => {
-    if (!this.containerRef.current) return [];
-
-    const rect = this.containerRef.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-
-    // Calculate grid cells needed to fill container
-    const cellsX = Math.ceil(width / this.props.gridSize);
-    const cellsY = Math.ceil(height / this.props.gridSize);
-
-    // Calculate center position based on offset
-    const centerX = -Math.round(this.state.offset.x / this.props.gridSize);
-    const centerY = -Math.round(this.state.offset.y / this.props.gridSize);
-
-    const positions: Position[] = [];
-    const halfCellsX = Math.ceil(cellsX / 2);
-    const halfCellsY = Math.ceil(cellsY / 2);
-
-    for (let y = centerY - halfCellsY; y <= centerY + halfCellsY; y++) {
-      for (let x = centerX - halfCellsX; x <= centerX + halfCellsX; x++) {
-        positions.push({ x, y });
-      }
-    }
-
-    return positions;
-  };
-
-  private getItemIndexForPosition = (x: number, y: number): number => {
+  // Spiral grid index calculation
+  const getItemIndexForPosition = useCallback((x: number, y: number): number => {
     // Special case for center
     if (x === 0 && y === 0) return 0;
 
@@ -259,288 +171,392 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
 
     const index = innerLayersSize + positionInLayer;
     return index;
-  };
+  }, []);
 
-  private debouncedStopMoving = debounce(() => {
-    this.setState({ isMoving: false, restPos: { ...this.state.offset } });
-  }, 200);
+  // Calculate visible positions
+  const calculateVisiblePositions = useCallback((): Position[] => {
+    if (!containerRef.current) return [];
 
-  private updateGridItems = () => {
-    if (!this.isComponentMounted) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
 
-    const positions = this.calculateVisiblePositions();
+    // Calculate grid cells needed to fill container
+    const cellsX = Math.ceil(width / gridSize);
+    const cellsY = Math.ceil(height / gridSize);
+
+    // Calculate center position based on offset
+    const centerX = -Math.round(offset.x / gridSize);
+    const centerY = -Math.round(offset.y / gridSize);
+
+    const positions: Position[] = [];
+    const halfCellsX = Math.ceil(cellsX / 2);
+    const halfCellsY = Math.ceil(cellsY / 2);
+
+    for (let y = centerY - halfCellsY; y <= centerY + halfCellsY; y++) {
+      for (let x = centerX - halfCellsX; x <= centerX + halfCellsX; x++) {
+        positions.push({ x, y });
+      }
+    }
+
+    return positions;
+  }, [gridSize, offset]);
+
+  // Debounced stop moving
+  const debouncedStopMoving = useMemo(
+    () =>
+      debounce(() => {
+        setIsMoving(false);
+        setRestPos({ ...offset });
+      }, 200),
+    [offset]
+  );
+
+  // Update grid items
+  const updateGridItems = useCallback(() => {
+    const positions = calculateVisiblePositions();
     const newItems = positions.map((position) => {
-      const gridIndex = this.getItemIndexForPosition(position.x, position.y);
+      const gridIndex = getItemIndexForPosition(position.x, position.y);
       return {
         position,
         gridIndex,
       };
     });
 
-    const distanceFromRest = getDistance(this.state.offset, this.state.restPos);
+    const distanceFromRest = getDistance(offset, restPos);
+    setGridItems(newItems);
+    setIsMoving(distanceFromRest > 5);
+    debouncedStopMoving();
+  }, [calculateVisiblePositions, getItemIndexForPosition, offset, restPos, debouncedStopMoving]);
 
-    this.setState({ gridItems: newItems, isMoving: distanceFromRest > 5 });
-
-    this.debouncedStopMoving();
-  };
-
-  private setOffsetAndNotify = (offset: Position) => {
-    this.setState({ offset }, () => {
-      if (this.props.onOffsetChange) {
-        this.props.onOffsetChange(offset);
-      }
-    });
-  };
-
-  private animate = () => {
-    if (!this.isComponentMounted) return;
-    const currentTime = performance.now();
-    const deltaTime = currentTime - this.lastUpdateTime;
-    if (deltaTime >= UPDATE_INTERVAL) {
-      const { velocity } = this.state;
-      const speed = Math.sqrt(
-        velocity.x * velocity.x + velocity.y * velocity.y
-      );
-      if (speed < MIN_VELOCITY) {
-        this.setState({ velocity: { x: 0, y: 0 } });
-        return;
-      }
-      let deceleration = FRICTION;
-      if (speed < VELOCITY_THRESHOLD) {
-        deceleration = FRICTION * (speed / VELOCITY_THRESHOLD);
-      }
-      const newOffset = {
-        x: this.state.offset.x + this.state.velocity.x,
-        y: this.state.offset.y + this.state.velocity.y,
-      };
-      this.setOffsetAndNotify(newOffset);
-      this.setState(
-        prevState => ({
-          velocity: {
-            x: prevState.velocity.x * deceleration,
-            y: prevState.velocity.y * deceleration,
-          },
-        }),
-        this.debouncedUpdateGridItems
-      );
-      this.lastUpdateTime = currentTime;
-    }
-    this.animationFrame = requestAnimationFrame(this.animate);
-  };
-
-  private handleDown = (p: Position) => {
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
-    }
-    this.setState({
-      isDragging: true,
-      startPos: {
-        x: p.x - this.state.offset.x,
-        y: p.y - this.state.offset.y,
-      },
-      velocity: { x: 0, y: 0 },
-    });
-    this.lastPos = { x: p.x, y: p.y };
-  };
-
-  private handleMove = (p: Position) => {
-    if (!this.state.isDragging) return;
-    const currentTime = performance.now();
-    const timeDelta = currentTime - this.state.lastMoveTime;
-    const rawVelocity = {
-      x: (p.x - this.lastPos.x) / (timeDelta || 1),
-      y: (p.y - this.lastPos.y) / (timeDelta || 1),
-    };
-    const velocityHistory = [...this.state.velocityHistory, rawVelocity];
-    if (velocityHistory.length > VELOCITY_HISTORY_SIZE) {
-      velocityHistory.shift();
-    }
-    const smoothedVelocity = velocityHistory.reduce(
-      (acc, vel) => ({
-        x: acc.x + vel.x / velocityHistory.length,
-        y: acc.y + vel.y / velocityHistory.length,
+  // Throttled update grid items
+  const debouncedUpdateGridItems = useMemo(
+    () =>
+      throttle(updateGridItems, UPDATE_INTERVAL, {
+        leading: true,
+        trailing: true,
       }),
-      { x: 0, y: 0 }
-    );
-    const newOffset = {
-      x: p.x - this.state.startPos.x,
-      y: p.y - this.state.startPos.y,
-    };
-    this.setOffsetAndNotify(newOffset);
-    this.setState(
-      {
-        velocity: smoothedVelocity,
-        lastMoveTime: currentTime,
-        velocityHistory,
-      },
-      this.updateGridItems
-    );
-    this.lastPos = { x: p.x, y: p.y };
-  };
+    [updateGridItems]
+  );
 
-  private handleUp = (p?: Position) => {
-    if (p && this.props.onItemClick) {
-      // 计算移动距离
-      const dx = p.x - this.lastPos.x;
-      const dy = p.y - this.lastPos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // 如果移动距离小于5像素，认为是点击
-      if (distance < 5) {
-        // 计算点击位置对应的网格索引
-        const containerRect = this.containerRef.current?.getBoundingClientRect();
-        if (containerRect) {
-          const x = p.x - containerRect.left - this.state.offset.x;
-          const y = p.y - containerRect.top - this.state.offset.y;
-          const gridX = Math.round(x / this.props.gridSize);
-          const gridY = Math.round(y / this.props.gridSize);
-          const gridIndex = this.getItemIndexForPosition(gridX, gridY);
-          this.props.onItemClick(gridIndex, p);
+  // Set offset and notify
+  const setOffsetAndNotify = useCallback(
+    (newOffset: Position) => {
+      setOffset(newOffset);
+      if (onOffsetChange) {
+        onOffsetChange(newOffset);
+      }
+    },
+    [onOffsetChange]
+  );
+
+  // Animation loop
+  const animate = useCallback(() => {
+    const currentTime = performance.now();
+    const deltaTime = currentTime - lastUpdateTimeRef.current;
+
+    if (deltaTime >= UPDATE_INTERVAL) {
+      setVelocity((currentVelocity) => {
+        const speed = Math.sqrt(
+          currentVelocity.x * currentVelocity.x +
+            currentVelocity.y * currentVelocity.y
+        );
+
+        if (speed < MIN_VELOCITY) {
+          return { x: 0, y: 0 };
+        }
+
+        let deceleration = FRICTION;
+        if (speed < VELOCITY_THRESHOLD) {
+          deceleration = FRICTION * (speed / VELOCITY_THRESHOLD);
+        }
+
+        setOffset((currentOffset) => {
+          const newOffset = {
+            x: currentOffset.x + currentVelocity.x,
+            y: currentOffset.y + currentVelocity.y,
+          };
+          if (onOffsetChange) {
+            onOffsetChange(newOffset);
+          }
+          return newOffset;
+        });
+
+        debouncedUpdateGridItems();
+
+        lastUpdateTimeRef.current = currentTime;
+
+        return {
+          x: currentVelocity.x * deceleration,
+          y: currentVelocity.y * deceleration,
+        };
+      });
+    }
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [onOffsetChange, debouncedUpdateGridItems]);
+
+  // Handle down
+  const handleDown = useCallback(
+    (p: Position) => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      setIsDragging(true);
+      setStartPos({
+        x: p.x - offset.x,
+        y: p.y - offset.y,
+      });
+      setVelocity({ x: 0, y: 0 });
+      lastPosRef.current = { x: p.x, y: p.y };
+    },
+    [offset]
+  );
+
+  // Handle move
+  const handleMove = useCallback(
+    (p: Position) => {
+      if (!isDragging) return;
+
+      const currentTime = performance.now();
+      const timeDelta = currentTime - lastMoveTime;
+
+      const rawVelocity = {
+        x: (p.x - lastPosRef.current.x) / (timeDelta || 1),
+        y: (p.y - lastPosRef.current.y) / (timeDelta || 1),
+      };
+
+      setVelocityHistory((history) => {
+        const newHistory = [...history, rawVelocity];
+        if (newHistory.length > VELOCITY_HISTORY_SIZE) {
+          newHistory.shift();
+        }
+        return newHistory;
+      });
+
+      const newVelocityHistory = [...velocityHistory, rawVelocity];
+      if (newVelocityHistory.length > VELOCITY_HISTORY_SIZE) {
+        newVelocityHistory.shift();
+      }
+
+      const smoothedVelocity = newVelocityHistory.reduce(
+        (acc, vel) => ({
+          x: acc.x + vel.x / newVelocityHistory.length,
+          y: acc.y + vel.y / newVelocityHistory.length,
+        }),
+        { x: 0, y: 0 }
+      );
+
+      const newOffset = {
+        x: p.x - startPos.x,
+        y: p.y - startPos.y,
+      };
+
+      setOffsetAndNotify(newOffset);
+      setVelocity(smoothedVelocity);
+      setLastMoveTime(currentTime);
+      updateGridItems();
+      lastPosRef.current = { x: p.x, y: p.y };
+    },
+    [isDragging, lastMoveTime, velocityHistory, startPos, setOffsetAndNotify, updateGridItems]
+  );
+
+  // Handle up
+  const handleUp = useCallback(
+    (p?: Position) => {
+      if (p && onItemClick) {
+        // Calculate movement distance
+        const dx = p.x - lastPosRef.current.x;
+        const dy = p.y - lastPosRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // If movement distance is less than 5px, treat as click
+        if (distance < 5) {
+          // Calculate grid index for click position
+          const containerRect = containerRef.current?.getBoundingClientRect();
+          if (containerRect) {
+            const x = p.x - containerRect.left - offset.x;
+            const y = p.y - containerRect.top - offset.y;
+            const gridX = Math.round(x / gridSize);
+            const gridY = Math.round(y / gridSize);
+            const gridIndex = getItemIndexForPosition(gridX, gridY);
+            onItemClick(gridIndex, p);
+          }
         }
       }
+
+      setIsDragging(false);
+      animationFrameRef.current = requestAnimationFrame(animate);
+    },
+    [onItemClick, offset, gridSize, getItemIndexForPosition, animate]
+  );
+
+  // Mouse event handlers
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      handleDown({ x: e.clientX, y: e.clientY });
+    },
+    [handleDown]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      handleMove({ x: e.clientX, y: e.clientY });
+    },
+    [handleMove]
+  );
+
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent) => {
+      handleUp({ x: e.clientX, y: e.clientY });
+    },
+    [handleUp]
+  );
+
+  // Touch event handlers
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      handleDown({ x: touch.clientX, y: touch.clientY });
+    },
+    [handleDown]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      e.preventDefault();
+      handleMove({ x: touch.clientX, y: touch.clientY });
+    },
+    [handleMove]
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.changedTouches[0];
+      if (touch) {
+        handleUp({ x: touch.clientX, y: touch.clientY });
+      } else {
+        handleUp();
+      }
+    },
+    [handleUp]
+  );
+
+  // Wheel event handler
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      e.preventDefault();
+      const deltaX = e.deltaX;
+      const deltaY = e.deltaY;
+      const newOffset = {
+        x: offset.x - deltaX,
+        y: offset.y - deltaY,
+      };
+      setOffsetAndNotify(newOffset);
+      setVelocity({ x: 0, y: 0 });
+      debouncedUpdateGridItems();
+    },
+    [offset, setOffsetAndNotify, debouncedUpdateGridItems]
+  );
+
+  // Mount effect - handle initial position
+  useEffect(() => {
+    if (initialPosition) {
+      setOffset({ ...initialPosition });
+      setRestPos({ ...initialPosition });
     }
-    
-    this.setState({ isDragging: false });
-    this.animationFrame = requestAnimationFrame(this.animate);
-  };
+    updateGridItems();
+  }, [initialPosition, updateGridItems]);
 
-  private handleMouseDown = (e: React.MouseEvent) => {
-    this.handleDown({
-      x: e.clientX,
-      y: e.clientY,
-    });
-  };
+  // Mount/unmount effect for event listeners
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  private handleMouseMove = (e: React.MouseEvent) => {
-    e.preventDefault();
-    this.handleMove({
-      x: e.clientX,
-      y: e.clientY,
-    });
-  };
+    // Add non-passive event listeners
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
 
-  private handleMouseUp = (e: React.MouseEvent) => {
-    this.handleUp({ x: e.clientX, y: e.clientY });
-  };
+    return () => {
+      // Cleanup
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      debouncedUpdateGridItems.cancel();
 
-  private handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-
-    if (!touch) return;
-
-    this.handleDown({
-      x: touch.clientX,
-      y: touch.clientY,
-    });
-  };
-
-  private handleTouchMove = (e: TouchEvent) => {
-    const touch = e.touches[0];
-
-    if (!touch) return;
-
-    e.preventDefault();
-    this.handleMove({
-      x: touch.clientX,
-      y: touch.clientY,
-    });
-  };
-
-  private handleTouchEnd = (e: React.TouchEvent) => {
-    const touch = e.changedTouches[0];
-    if (touch) {
-      this.handleUp({ x: touch.clientX, y: touch.clientY });
-    } else {
-      this.handleUp();
-    }
-  };
-
-  private handleWheel = (e: WheelEvent) => {
-    e.preventDefault();
-    const deltaX = e.deltaX;
-    const deltaY = e.deltaY;
-    const newOffset = {
-      x: this.state.offset.x - deltaX,
-      y: this.state.offset.y - deltaY,
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchmove", handleTouchMove);
     };
-    this.setOffsetAndNotify(newOffset);
-    this.setState(
-      prevState => ({
-        velocity: { x: 0, y: 0 },
-      }),
-      this.debouncedUpdateGridItems
-    );
-  };
+  }, [handleWheel, handleTouchMove, debouncedUpdateGridItems]);
 
-  render() {
-    const { offset, isDragging, gridItems, isMoving } = this.state;
-    const { gridSize, className } = this.props;
+  // Get container dimensions
+  const containerRect = containerRef.current?.getBoundingClientRect();
+  const containerWidth = containerRect?.width || 0;
+  const containerHeight = containerRect?.height || 0;
 
-    // Get container dimensions
-    const containerRect = this.containerRef.current?.getBoundingClientRect();
-    const containerWidth = containerRect?.width || 0;
-    const containerHeight = containerRect?.height || 0;
-
-    return (
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        position: "absolute",
+        inset: 0,
+        touchAction: "none",
+        overflow: "hidden",
+        cursor: isDragging ? "grabbing" : "grab",
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       <div
-        ref={this.containerRef as React.RefObject<HTMLDivElement>}
-        className={className}
         style={{
           position: "absolute",
           inset: 0,
-          touchAction: "none",
-          overflow: "hidden",
-          cursor: isDragging ? "grabbing" : "grab",
+          transform: `translate3d(${offset.x}px, ${offset.y}px, 0)`,
+          willChange: "transform",
         }}
-        onMouseDown={this.handleMouseDown}
-        onMouseMove={this.handleMouseMove}
-        onMouseUp={this.handleMouseUp}
-        onMouseLeave={this.handleMouseUp}
-        onTouchStart={this.handleTouchStart}
-        onTouchEnd={this.handleTouchEnd}
-        onTouchCancel={this.handleTouchEnd}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            transform: `translate3d(${offset.x}px, ${offset.y}px, 0)`,
-            willChange: "transform",
-          }}
-        >
-          {gridItems.map((item) => {
-            const x = item.position.x * gridSize + containerWidth / 2;
-            const y = item.position.y * gridSize + containerHeight / 2;
+        {gridItems.map((item) => {
+          const x = item.position.x * gridSize + containerWidth / 2;
+          const y = item.position.y * gridSize + containerHeight / 2;
 
-            return (
-              <div
-                key={`${item.position.x}-${item.position.y}`}
-                style={{
-                  position: "absolute",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  userSelect: "none",
-                  width: gridSize,
-                  height: gridSize,
-                  transform: `translate3d(${x}px, ${y}px, 0)`,
-                  marginLeft: `-${gridSize / 2}px`,
-                  marginTop: `-${gridSize / 2}px`,
-                  willChange: "transform",
-                }}
-              >
-                {this.props.renderItem({
-                  gridIndex: item.gridIndex,
-                  position: item.position,
-                  isMoving,
-                })}
-              </div>
-            );
-          })}
-        </div>
+          return (
+            <div
+              key={`${item.position.x}-${item.position.y}`}
+              style={{
+                position: "absolute",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                userSelect: "none",
+                width: gridSize,
+                height: gridSize,
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+                marginLeft: `-${gridSize / 2}px`,
+                marginTop: `-${gridSize / 2}px`,
+                willChange: "transform",
+              }}
+            >
+              {renderItem({
+                gridIndex: item.gridIndex,
+                position: item.position,
+                isMoving,
+              })}
+            </div>
+          );
+        })}
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 export default ThiingsGrid;

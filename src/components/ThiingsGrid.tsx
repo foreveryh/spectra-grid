@@ -212,7 +212,7 @@ const ThiingsGrid: React.FC<ThiingsGridProps> = ({
     [offset]
   );
 
-  // Update grid items
+  // Update grid items with optimized state updates
   const updateGridItems = useCallback(() => {
     const positions = calculateVisiblePositions();
     const newItems = positions.map((position) => {
@@ -224,8 +224,26 @@ const ThiingsGrid: React.FC<ThiingsGridProps> = ({
     });
 
     const distanceFromRest = getDistance(offset, restPos);
-    setGridItems(newItems);
-    setIsMoving(distanceFromRest > 5);
+    const newIsMoving = distanceFromRest > 5;
+
+    // Only update isMoving if it changed
+    setIsMoving((prev) => (prev !== newIsMoving ? newIsMoving : prev));
+
+    // Only update gridItems if positions changed (shallow comparison)
+    setGridItems((prev) => {
+      if (prev.length !== newItems.length) return newItems;
+
+      // Check if any position changed
+      const hasChanged = newItems.some((item, idx) => {
+        const prevItem = prev[idx];
+        return !prevItem ||
+               prevItem.position.x !== item.position.x ||
+               prevItem.position.y !== item.position.y;
+      });
+
+      return hasChanged ? newItems : prev;
+    });
+
     debouncedStopMoving();
   }, [calculateVisiblePositions, getItemIndexForPosition, offset, restPos, debouncedStopMoving]);
 
@@ -394,6 +412,10 @@ const ThiingsGrid: React.FC<ThiingsGridProps> = ({
   // Mouse event handlers
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      // Don't trigger drag if clicking on a photo cell
+      if ((e.target as HTMLElement).closest('.photo-cell')) {
+        return;
+      }
       handleDown({ x: e.clientX, y: e.clientY });
     },
     [handleDown]
@@ -419,6 +441,12 @@ const ThiingsGrid: React.FC<ThiingsGridProps> = ({
     (e: React.TouchEvent) => {
       const touch = e.touches[0];
       if (!touch) return;
+
+      // Don't trigger drag if touching a photo cell
+      if ((e.target as HTMLElement).closest('.photo-cell')) {
+        return;
+      }
+
       handleDown({ x: touch.clientX, y: touch.clientY });
     },
     [handleDown]

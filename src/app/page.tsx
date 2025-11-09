@@ -2,6 +2,7 @@
 
 import ThiingsGrid from "../components/ThiingsGrid";
 import { PhotoCell } from "../components/PhotoCell";
+import Lightbox from "../components/Lightbox";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { photos as mockPhotos } from "../lib/mockData";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,7 @@ export default function Page() {
   const [rehydrated, setRehydrated] = useState(false);
   const loadingRef = useRef(false);
   const [loading, setLoading] = useState(false);
+  const [currentPhoto, setCurrentPhoto] = useState<Photo | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -100,6 +102,14 @@ export default function Page() {
     saveGridState({ photos, page, hasMore, offset });
   }, [photos, page, hasMore, offset]);
 
+  const handlePhotoOpen = useCallback((photo: Photo) => {
+    setCurrentPhoto(photo);
+  }, []);
+
+  const handlePhotoClose = useCallback(() => {
+    setCurrentPhoto(null);
+  }, []);
+
   if (!rehydrated) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-black text-white">
@@ -123,6 +133,7 @@ export default function Page() {
               photo={photo}
               isMoving={isMoving}
               size={GRID}
+              onOpen={() => handlePhotoOpen(photo)}
               onClick={() => router.push(`/photo/${photo.id}`)}
             />
           );
@@ -130,9 +141,12 @@ export default function Page() {
         onItemClick={(gridIndex, position) => {
           const idx = pseudoRandomIndex(position.x, position.y, photos.length);
           const photo = photos[idx];
-          router.push(`/photo/${photo.id}`);
+          handlePhotoOpen(photo);
         }}
       />
+      {currentPhoto && (
+        <Lightbox photo={currentPhoto} onClose={handlePhotoClose} />
+      )}
     </div>
   );
 } 

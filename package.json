@@ -3,14 +3,15 @@
   "private": true,
   "scripts": {
     "dev": "bunx next dev",
-    "build": "npx next build",
-    "pages:build": "npm run build && npx @cloudflare/next-on-pages",
-    "export": "next-on-pages",
-    "deploy": "wrangler pages deploy ./.vercel/output/static",
+    "build": "npx open-next build",
+    "preview": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
     "import": "bun run scripts/import.ts"
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4",
+    "@opennextjs/cloudflare": "^1.0.0",
     "@headlessui/react": "2.2.4",
     "colorthief": "^2.6.0",
     "drizzle-orm": "^0.30.8",
@@ -23,7 +24,6 @@
     "sharp": "^0.33.0"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.12",
     "@types/node": "24.0.3",
     "@types/react": "19.1.8",
     "autoprefixer": "^10.4.16",

@@ -4,8 +4,8 @@ import PhotoCount from "../components/PhotoCount";
 
 export const metadata = {
   title: {
-    default: "Love Venus",
-    template: "%s | Love Venus",
+    default: "Beauty Grid",
+    template: "%s | Beauty Grid",
   },
   description:
     "Love Venus is an interactive, hue-sorted gallery of artistic female nude photography. Explore a spectrum of color-graded images celebrating the elegance of the female form.",
@@ -15,17 +15,17 @@ export const metadata = {
     "color gradient photo grid",
     "hue sorted gallery",
     "artistic nude",
-    "Love Venus",
+    "Beauty Grid",
   ],
-  authors: [{ name: "Love Venus" }],
-  creator: "Love Venus",
+  authors: [{ name: "Beauty Grid" }],
+  creator: "Beauty Grid",
   themeColor: "#000000",
   openGraph: {
-    title: "Love Venus – Artistic Nude Photo Spectrum",
+    title: "Beauty Grid – Artistic Nude Photo Spectrum",
     description:
       "Discover an immersive wall of artistic female nude photographs, arranged by color for a seamless visual journey.",
     url: "https://lovevenus.art",
-    siteName: "Love Venus",
+    siteName: "Beauty Grid",
     images: [
       {
         url: "/og.png",

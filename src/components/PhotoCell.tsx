@@ -1,22 +1,29 @@
-import { FC } from "react";
+import { FC, memo } from "react";
 
 interface Props {
   photo: any;
   isMoving: boolean;
-  size: number; // 240
+  size: number;
   onClick?: () => void;
+  onOpen?: () => void;
 }
 
-export const PhotoCell: FC<Props> = ({ photo, isMoving, size, onClick }) => {
-  // Use the pre-generated AVIF thumbnail key directly.
+const PhotoCellComponent: FC<Props> = ({ photo, isMoving, size, onClick, onOpen }) => {
+  // Use the pre-generated AVIF thumbnail key directly
   const thumbSrc = photo.thumb_key;
 
-  // For fallback, you could construct a path to the original JPG/PNG.
-  // const fallbackSrc = photo.r2_key;
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent drag event
+    if (onOpen) {
+      onOpen();
+    } else if (onClick) {
+      onClick();
+    }
+  };
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden cursor-pointer"
+      className="absolute inset-0 overflow-hidden photo-cell cursor-pointer"
       style={{
         background: photo.dominant_rgb,
         width: size,
@@ -24,12 +31,12 @@ export const PhotoCell: FC<Props> = ({ photo, isMoving, size, onClick }) => {
         padding: 0,
         margin: 0
       }}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <picture>
         <source srcSet={thumbSrc} type="image/avif" />
         <img
-          src={thumbSrc} // Fallback for browsers that don't support <picture> or AVIF
+          src={thumbSrc}
           alt={photo.filename}
           className="w-full h-full object-cover"
           style={{
@@ -45,3 +52,13 @@ export const PhotoCell: FC<Props> = ({ photo, isMoving, size, onClick }) => {
     </div>
   );
 };
+
+// Use React.memo to prevent unnecessary re-renders
+export const PhotoCell = memo(PhotoCellComponent, (prevProps, nextProps) => {
+  // Only re-render if photo, size, or isMoving changed
+  return (
+    prevProps.photo.id === nextProps.photo.id &&
+    prevProps.size === nextProps.size &&
+    prevProps.isMoving === nextProps.isMoving
+  );
+});

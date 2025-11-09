@@ -1,14 +1,16 @@
-# MVP Photo Grid – PRD & Code Skeleton
+# MVP Photo Grid – PRD & Code Skeleton
+
+> **Note:** This document captures the *initial* MVP PRD. Any changes to scope or requirements after the first release will be appended in the **UPDATE** section at the bottom. Rationale for each change will be discussed in the project Reflection documents.
 
 ---
 
-## 1 · Product Requirements Document (PRD)
+## 1 · Product Requirements Document (PRD)
 
-### 1.1 Goal
+### 1.1 Goal
 
 Build an **MVP photography showcase** that displays \~1 000 model photos in an infinite, draggable grid (Thiings‑style), sorted by hue to create an artistic gradient. Photos are uploaded by you via CLI; the site runs completely on the Cloudflare stack and uses Bun for dev/CI.
 
-### 1.2 Key Features
+### 1.2 Key Features
 
 | ID  | Feature                                                                              | Must / Nice              |
 | --- | ------------------------------------------------------------------------------------ | ------------------------ |
@@ -21,42 +23,42 @@ Build an **MVP photography showcase** that displays \~1 000 model photos in an
 | F‑7 | Admin soft‑delete & restore                                                          | Nice (CLI now, UI later) |
 | F‑8 | No login / payment (future)                                                          | —                        |
 
-### 1.3 Acceptance Criteria
+### 1.3 Acceptance Criteria
 
-- First paint < 1 s @ Cable 10 Mbps (Edge cache warm)
-- Scroll 60 fps on M1 MacBook & iPhone 13
-- Import 1 000 files locally with `bun run import ./photos_raw` in < 30 s
+- First paint < 1 s @ Cable 10 Mbps (Edge cache warm)
+- Scroll 60 fps on M1 MacBook & iPhone 13
+- Import 1 000 files locally with `bun run import ./photos_raw` in < 30 s
 - Running `bun run dev` starts local edge‑compatible dev server
 - Running `bun run deploy` → Cloudflare Pages + Functions in CI passes
 
-### 1.4 Milestones
+### 1.4 Milestones
 
-1. **Stage 1‑2** – Code skeleton, Bun dev, Wrangler config.
-2. **Stage 3** – CLI importer finished, end‑to‑end upload works.
-3. **Stage 4** – Grid & Lightbox polished, responsive.
-4. **Stage 5** – Final perf pass, README.
+1. **Stage 1‑2** – Code skeleton, Bun dev, Wrangler config.
+2. **Stage 3** – CLI importer finished, end‑to‑end upload works.
+3. **Stage 4** – Grid & Lightbox polished, responsive.
+4. **Stage 5** – Final perf pass, README.
 
 ---
 
-## 2 · Tech & Infra Overview
+## 2 · Tech & Infra Overview
 
 ```
-┌────────────┐   PUT /api/upload (Edge Fn)
+┌────────────┐   PUT /api/upload (Edge Fn)
 │   Bun CLI  │──────────────┐
 └────┬───────┘              │  CF‑D1   CF‑R2
      │                      ▼
      │              ┌──────────────┐
-GET /        ←──────┤  Next.js @Edge│
+GET /        ←──────┤  Next.js @Edge│
 GET /photo/:id      └───┬───────────┘
                         │
                 ┌───────▼───────┐
-                │ Cloudflare R2 │ (original)
+                │ Cloudflare R2 │ (original)
                 └───────────────┘
 ```
 
 ---
 
-## 3 · Project Layout
+## 3 · Project Layout
 
 ```
 .
@@ -82,9 +84,9 @@ GET /photo/:id      └───┬───────────┘
 
 ---
 
-## 4 · Code – *every file ready to copy*
+## 4 · Code – *every file ready to copy*
 
-### 4.1 bunfig.toml
+### 4.1 bunfig.toml
 
 ```toml
 name = "photo-grid"
@@ -92,7 +94,7 @@ version = "0.1.0"
 # Enable .env support & TypeScript transpile
 ```
 
-### 4.2 package.json
+### 4.2 package.json
 
 ```json
 {
@@ -122,7 +124,7 @@ version = "0.1.0"
 }
 ```
 
-### 4.3 wrangler.toml
+### 4.3 wrangler.toml
 
 ```toml
 name = "photo-grid"
@@ -142,7 +144,7 @@ GRID_W = "240"
 GRID_H = "320"
 ```
 
-### 4.4 scripts/import.ts
+### 4.4 scripts/import.ts
 
 ```ts
 /** CLI: bun run scripts/import.ts ./photos_raw */
@@ -198,7 +200,7 @@ function rgb2hsl(r: number, g: number, b: number) {
 }
 ```
 
-### 4.5 src/lib/db.ts
+### 4.5 src/lib/db.ts
 
 ```ts
 import { drizzle } from "drizzle-orm/d1";
@@ -208,10 +210,10 @@ export function getDb(env: Env) {
 }
 ```
 
-### 4.6 src/components/ThiingsGrid.tsx
+### 4.6 src/components/ThiingsGrid.tsx
 
 ```tsx
-// shortened: paste the original open‑source component here (≈260 lines)
+// shortened: paste the original open‑source component here (≈260 lines)
 export interface GridProps {
   gridWidth: number;
   gridHeight: number;
@@ -220,7 +222,7 @@ export interface GridProps {
 // ... implementation identical, but uses gridWidth & gridHeight for layout
 ```
 
-### 4.7 src/components/PhotoCell.tsx
+### 4.7 src/components/PhotoCell.tsx
 
 ```tsx
 import { FC } from "react";
@@ -250,7 +252,7 @@ export const PhotoCell: FC<Props> = ({ photo, isMoving, onOpen, gridW, gridH }) 
 );
 ```
 
-### 4.8 src/components/Lightbox.tsx
+### 4.8 src/components/Lightbox.tsx
 
 ```tsx
 import { Dialog } from "@headlessui/react";
@@ -273,7 +275,7 @@ export default function Lightbox({ photo, onClose }: { photo: any; onClose: () =
 }
 ```
 
-### 4.9 src/app/layout.tsx
+### 4.9 src/app/layout.tsx
 
 ```tsx
 export const metadata = { title: "Photo Grid" };
@@ -282,7 +284,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-### 4.10 src/app/page.tsx
+### 4.10 src/app/page.tsx
 
 ```tsx
 import ThiingsGrid from "../components/ThiingsGrid";
@@ -322,7 +324,7 @@ export default function Page() {
 }
 ```
 
-### 4.11 src/app/api/upload/route.ts (Edge Function)
+### 4.11 src/app/api/upload/route.ts (Edge Function)
 
 ```ts
 import { getDb } from "../../../lib/db";
@@ -344,14 +346,14 @@ export async function POST(req: Request, env: Env) {
 }
 ```
 
-### 4.12 README.md (excerpt)
+### 4.12 README.md (excerpt)
 
-````md
-## Quick Start (dev)
+```md
+## Quick Start (dev)
 ```bash
 bun install
 bun run dev
-````
+```
 
 ## Import & Upload
 
@@ -360,63 +362,52 @@ bun run import ./photos_raw
 # then run POST /api/upload per file via a small curl or modify script
 ```
 
-````
+```md
 
 ---
-## 5 · Next Steps
-1. Copy this tree into Cursor IDE.
-2. Paste open‑source `ThiingsGrid.tsx`.
-3. Run `bun install` then `bun run dev` – you’ll have a local edge‑compatible server.
-4. Run `bun run import ./photos_raw` to analyse colours.
-5. Implement the REST upload part in the script or call `/api/upload` manually.
-
-Enjoy your one‑click MVP! 🎉
-
-
-
-## 5 · Local Dev Mode (Bun + Wrangler)
+## 5 · Local Dev Mode (Bun + Wrangler)
 
 > Follow these steps inside **Cursor IDE**; they run on macOS, Linux, or Windows‑WSL.
 
 | Step | Command | What happens |
 |------|---------|--------------|
-| 1 – Install deps | `bun install` | Bun reads **package.json**, creates `bun.lockb`, installs modules. |
-| 2 – Edge functions | `wrangler dev` | Spins up Cloudflare Functions & D1/R2 emulator at <http://127.0.0.1:8787>. Keep this tab open. |
-| 3 – Next.js front‑end | `bun run dev` | Launches Next.js on <http://localhost:3000>; rewrites `/api/*` calls to Wrangler dev. |
-| 4 – Analyse photos | `bun run import ./photos_raw` | Generates `photos.json` with colour meta ready for upload. |
-| 5 – Upload originals | `curl -F file=@foo.jpg -F meta=@meta.json http://127.0.0.1:8787/api/upload` | Stores file in R2‑emulator & inserts metadata into D1. |
-| 6 – Open browser | Visit <http://localhost:3000> | Drag grid, click tile → Lightbox. |
+| 1 – Install deps | `bun install` | Bun reads **package.json**, creates `bun.lockb`, installs modules. |
+| 2 – Edge functions | `wrangler dev` | Spins up Cloudflare Functions & D1/R2 emulator at <http://127.0.0.1:8787>. Keep this tab open. |
+| 3 – Next.js front‑end | `bun run dev` | Launches Next.js on <http://localhost:3000>; rewrites `/api/*` calls to Wrangler dev. |
+| 4 – Analyse photos | `bun run import ./photos_raw` | Generates `photos.json` with colour meta ready for upload. |
+| 5 – Upload originals | `curl -F file=@foo.jpg -F meta=@meta.json http://127.0.0.1:8787/api/upload` | Stores file in R2‑emulator & inserts metadata into D1. |
+| 6 – Open browser | Visit <http://localhost:3000> | Drag grid, click tile → Detail page. |
 
 **Tips & Troubleshooting**
 * Change dev ports via `wrangler dev --port 8788` or set `NEXT_PUBLIC_API_URL`.
-* `.env.local` can override `GRID_W` / `GRID_H` for quick experiments.
+* `.env.local` can override `GRID_W` / `GRID_H` for quick experiments.
 * Check DB rows: `wrangler d1 execute DB --command "SELECT count(*) FROM photos"`.
 * Thumbnail 404? Verify R2 keys and query params.
 
 ---
 ## 6 · ThiingsGrid – Background & Integration (Vendor‑in)
 
-### 6.1 Component Snapshot
+### 6.1 Component Snapshot
 | Item | Details |
 |------|---------|
 | **Repo** | <https://github.com/charlieclark/thiings-grid> |
 | **License** | MIT – fully permissive; vendoring is allowed. |
-| **Tech** | Pure React 18 + TypeScript, no runtime deps; relies on `transform: translate3d` + virtual windowing. |
-| **Lines of code** | ≈ 260 |
-| **Why we use it** | Provides the exact "Thiings.co" feel—GPU‑friendly inertia scrolling & culling—so we don’t reinvent the wheel. |
+| **Tech** | Pure React 18 + TypeScript, no runtime deps; relies on `transform: translate3d` + virtual windowing. |
+| **Lines of code** | ≈ 260 |
+| **Why we use it** | Provides the exact "Thiings.co" feel—GPU‑friendly inertia scrolling & culling—so we don't reinvent the wheel. |
 
-### 6.2 Vendor‑in Workflow (Option 1)
+### 6.2 Vendor‑in Workflow (Option 1)
 > _Executed automatically by the **postinstall** hook or manually copy/paste._
 
 ```bash
 # one‑liner to pull latest stable into our repo
 curl -sSL https://raw.githubusercontent.com/charlieclark/thiings-grid/main/lib/ThiingsGrid.tsx \
   -o src/components/ThiingsGrid.tsx
-````
+```
 
 *Package.json* already contains a `postinstall` script that reruns the curl so CI always has the file; feel free to lock to a commit hash for reproducibility.
 
-### 6.3 API Adjustments
+### 6.3 API Adjustments
 
 The original component expects a single `gridSize`. We extended it to rectangular cells:
 
@@ -430,7 +421,7 @@ interface GridProps {
 
 Search & replace `gridSize` → `gridWidth` / `gridHeight` inside the downloaded file (already automated in the repository patch).
 
-### 6.4 Usage Snippet (Cursor)
+### 6.4 Usage Snippet (Cursor)
 
 ```tsx
 import ThiingsGrid from "@/components/ThiingsGrid";
@@ -444,7 +435,7 @@ import ThiingsGrid from "@/components/ThiingsGrid";
 
 No extra provider or context is required; inertia is internal.
 
-### 6.5 Updating to Upstream
+### 6.5 Updating to Upstream
 
 When the upstream repo fixes bugs:
 
@@ -453,7 +444,7 @@ git -C vendor/thiings-grid pull origin main   # if you later switch to submodule
 # OR rerun the curl one‑liner
 ```
 
-Run `bunx next lint` to ensure type changes don’t break our wrapper.
+Run `bunx next lint` to ensure type changes don't break our wrapper.
 
 ---
 
@@ -462,4 +453,29 @@ Run `bunx next lint` to ensure type changes don’t break our wrapper.
 1. **Pull ThiingsGrid** via the curl command (already scripted).
 2. Run `bun run dev` & `wrangler dev` – grid should render with inertia.
 3. Proceed with CLI upload to populate real photos.
+
+---
+## 8 · Implementation Updates (2025-06-17)
+
+The following notes capture the **delta between the original skeleton above and the code that now lives in the repository**. No content above has been altered.
+
+### 8.1  UI/UX changes
+1. **Detail page instead of Lightbox** – Clicking a tile now performs a route change to `/photo/[id]` implemented as a Client Component.  The original `Lightbox` component remains in the codebase for future A/B tests but is no longer wired up.
+2. **Responsive layout** – The detail page stacks vertically on mobile (`flex-col`) and switches to a two-column layout on `lg:` screens.  Images scale with `max-w` breakpoints.
+3. **Tailwind CSS integration** – Added `tailwindcss`, `postcss`, `autoprefixer` as dev deps, created `tailwind.config.js`, `postcss.config.js`, and `src/globals.css`; imported the latter in `app/layout.tsx`.
+4. **Buttons restyled** – Primary: black pill button "Back to Grid". Secondary: outlined pill "Download Image" with hover inversion.  Both use `px-6 py-2`, `rounded-full`, `min-w-[140px]` for consistent sizing.
+5. **Close button** – A fixed `X` (lucide-react) in the top-right corner navigates back to the grid.
+
+### 8.2  Documentation adjustments
+* Anywhere the PRD references "click tile → Lightbox", mentally replace with "click tile → Detail page".
+* Quick-start steps are unchanged except you will now see a page transition rather than an overlay.
+
+### 8.3  Open items
+* Hook the detail page data (title, tags, description) to real DB fields once available; currently mocked.
+* Add SEO/meta tags (`og:image`, dynamic `<title>`) per photo.
+
+---
+## UPDATE
+
+<!-- Append new requirements or scope changes here, e.g. authentication, payments integration, privacy policy pages -->
 

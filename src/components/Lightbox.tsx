@@ -2,7 +2,12 @@ import { Dialog } from "@headlessui/react";
 import { X, Download, ArrowLeft } from "lucide-react";
 
 export default function Lightbox({ photo, onClose }: { photo: any; onClose: () => void }) {
-  if (!photo) return null;
+  console.log("🎨 Lightbox rendering with photo:", photo?.filename);
+
+  if (!photo) {
+    console.log("🎨 Lightbox: no photo, returning null");
+    return null;
+  }
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -14,7 +19,11 @@ export default function Lightbox({ photo, onClose }: { photo: any; onClose: () =
   };
 
   return (
-    <Dialog open onClose={onClose} className="fixed inset-0 z-50">
+    <Dialog 
+      open={true} 
+      onClose={onClose} 
+      className="fixed inset-0 z-50"
+    >
       <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
       <div className="relative flex h-full w-full items-center justify-center p-4">
         <img

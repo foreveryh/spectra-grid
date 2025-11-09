@@ -12,7 +12,7 @@ function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ) {
-  let timeoutId: number | undefined = undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
 
   const debouncedFn = function (...args: Parameters<T>) {
     if (timeoutId) {
@@ -39,7 +39,7 @@ function throttle<T extends (...args: unknown[]) => unknown>(
   options: { leading?: boolean; trailing?: boolean } = {}
 ) {
   let lastCall = 0;
-  let timeoutId: number | undefined = undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
   const { leading = true, trailing = true } = options;
 
   const throttledFn = function (...args: Parameters<T>) {
@@ -273,8 +273,18 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
     });
 
     const distanceFromRest = getDistance(this.state.offset, this.state.restPos);
+    const isMoving = distanceFromRest > 5;
 
-    this.setState({ gridItems: newItems, isMoving: distanceFromRest > 5 });
+    // 只有在移动状态改变时才更新状态
+    if (isMoving !== this.state.isMoving) {
+      this.setState({ isMoving });
+    }
+
+    // 只在网格项发生变化时才更新
+    const hasGridItemsChanged = JSON.stringify(newItems) !== JSON.stringify(this.state.gridItems);
+    if (hasGridItemsChanged) {
+      this.setState({ gridItems: newItems });
+    }
 
     this.debouncedStopMoving();
   };
@@ -387,6 +397,10 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
   };
 
   private handleMouseDown = (e: React.MouseEvent) => {
+    // 如果点击的是照片单元格，不触发拖拽
+    if ((e.target as HTMLElement).closest('.photo-cell')) {
+      return;
+    }
     this.handleDown({
       x: e.clientX,
       y: e.clientY,
@@ -407,8 +421,12 @@ class ThiingsGrid extends Component<ThiingsGridProps, State> {
 
   private handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-
     if (!touch) return;
+
+    // 如果触摸的是照片单元格，不触发拖拽
+    if ((e.target as HTMLElement).closest('.photo-cell')) {
+      return;
+    }
 
     this.handleDown({
       x: touch.clientX,

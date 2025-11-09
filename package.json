@@ -3,9 +3,10 @@
   "private": true,
   "scripts": {
     "dev": "bunx next dev",
-    "build": "bunx next build",
+    "build": "npx next build",
+    "pages:build": "npm run build && npx @cloudflare/next-on-pages",
     "export": "next-on-pages",
-    "deploy": "wrangler pages deploy ./.next",
+    "deploy": "wrangler pages deploy ./.vercel/output/static",
     "import": "bun run scripts/import.ts"
   },
   "dependencies": {

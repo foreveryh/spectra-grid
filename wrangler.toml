@@ -3,9 +3,6 @@ compatibility_date = "2025-06-16"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
-[build]
-command = "npx next build && npx @cloudflare/next-on-pages"
-
 [[r2_buckets]]
 binding = "PHOTOS_BUCKET"
 bucket_name = "photos"

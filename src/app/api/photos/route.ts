@@ -1,7 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export const runtime = 'edge';
-
 /**
  * GET /api/photos – production uses D1, dev falls back to photos.json
  */

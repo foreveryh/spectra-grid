@@ -1,7 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export const runtime = 'edge';
-
 /**
  * GET /api/photo/[id] – 根据 ID 获取单个图片数据
  */

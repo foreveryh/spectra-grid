@@ -1,4 +1,4 @@
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export const runtime = 'edge';
 
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   
   try {
     // 尝试获取 Cloudflare 环境
-    const { env } = getRequestContext();
+    const { env } = getCloudflareContext();
     const envAny = env as any;
 
     if (envAny?.DB) {
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       rows = photos.slice(offset, offset + limit) as any[];
     }
   } catch (e) {
-    // 如果 getRequestContext 失败，说明是本地开发环境，直接使用 mockData
+    // 如果 getCloudflareContext 失败，说明是本地开发环境，直接使用 mockData
     try {
       const { photos } = await import('../../../lib/mockData');
       totalCount = photos.length;

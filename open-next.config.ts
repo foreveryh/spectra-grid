@@ -12,6 +12,7 @@ const config = {
       queue: "dummy",
     },
   },
+  edgeExternals: ["node:crypto"],
 };
 
 export default config;

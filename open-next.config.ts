@@ -1,18 +1,5 @@
 // OpenNext configuration for Cloudflare Workers
-// Configuration for @opennextjs/cloudflare@1.0.0-beta.4
+// Configuration for @opennextjs/cloudflare@1.11.1
+import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 
-const config = {
-  default: {
-    override: {
-      wrapper: "cloudflare-node",
-      converter: "edge",
-      proxyExternalRequest: "fetch",
-      incrementalCache: "dummy",
-      tagCache: "dummy",
-      queue: "dummy",
-    },
-  },
-  edgeExternals: ["node:crypto"],
-};
-
-export default config;
+export default defineCloudflareConfig();

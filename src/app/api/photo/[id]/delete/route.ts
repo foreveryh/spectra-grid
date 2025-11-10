@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const id = Number(params.id);
   if (!id) return new Response('invalid id', { status: 400 });

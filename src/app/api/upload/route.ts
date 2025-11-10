@@ -1,5 +1,5 @@
 import { getDb } from "../../../lib/db";
-export const runtime = "edge";
+
 export async function POST(req: Request, env: any) {
   // expects FormData with file & meta JSON
   const form = await req.formData();

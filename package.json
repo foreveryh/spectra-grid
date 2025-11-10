@@ -4,8 +4,7 @@
   "packageManager": "npm@10.9.0",
   "scripts": {
     "dev": "bunx next dev",
-    "build": "next build",
-    "postbuild": "npx opennextjs-cloudflare build",
+    "build": "opennextjs-cloudflare",
     "preview": "wrangler dev",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
@@ -13,7 +12,7 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4",
-    "@opennextjs/cloudflare": "1.0.0-beta.4",
+    "@opennextjs/cloudflare": "^1.11.1",
     "@headlessui/react": "2.2.4",
     "colorthief": "^2.6.0",
     "drizzle-orm": "^0.30.8",

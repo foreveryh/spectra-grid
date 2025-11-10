@@ -1,6 +1,7 @@
 {
   "name": "spectra-grid",
   "private": true,
+  "packageManager": "npm@10.9.0",
   "scripts": {
     "dev": "bunx next dev",
     "build": "npx open-next build",
@@ -11,7 +12,7 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4",
-    "@opennextjs/cloudflare": "^1.0.0",
+    "@opennextjs/cloudflare": "1.0.0-beta.4",
     "@headlessui/react": "2.2.4",
     "colorthief": "^2.6.0",
     "drizzle-orm": "^0.30.8",

@@ -6,6 +6,7 @@
     "dev": "bunx next dev",
     "build": "next build",
     "postbuild": "test \"$WORKERS_CI\" = \"1\" && npx opennextjs-cloudflare build --skip-next-build || echo 'Skipping OpenNext build (not in Cloudflare CI)'",
+    "cf-build": "opennextjs-cloudflare build",
     "preview": "wrangler dev",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",

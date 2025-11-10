@@ -34,8 +34,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# bun
+# bun (keep for local dev only, exclude from git to force npm on Cloudflare)
 bun.lockb
+bunfig.toml
 
 # env 
 .env
